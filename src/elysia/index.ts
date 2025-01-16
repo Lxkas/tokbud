@@ -16,8 +16,8 @@ export const elysiaApp = new Elysia({ prefix: "/api" })
 			};
 		}
 	})
-	.post("/webhook/clerk", ({ body }: { body: ClerkOrganizationWebhook }) => {
-		syncOrganizations(body);
+	.post("/webhook/clerk", ({ body }: { body: { data: ClerkOrganizationWebhook } }) => {
+		syncOrganizations(body.data);
 	});
 
 export type ElysiaApp = typeof elysiaApp;
