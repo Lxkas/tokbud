@@ -1,4 +1,4 @@
-import type { ElysiaApp } from "@/elysia";
+import type { ElysiaApp } from ".";
 import { treaty } from "@elysiajs/eden";
 
 const url = process.env.URL_DOMAIN ?? "localhost:3000";
