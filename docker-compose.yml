@@ -1,32 +1,94 @@
-services:
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
-    container_name: es01
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-    ports:
-      - "9200:9200"
-    networks:
-      - elastic
-    volumes:
-      - elasticsearch-data:/usr/share/elasticsearch/data
-
-  kibana:
-      image: docker.elastic.co/kibana/kibana:8.17.0
-      environment:
-        - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      ports:
-        - "5601:5601"
-      depends_on:
-        - elasticsearch
-      networks:
-        - elastic
-
 networks:
-  elastic:
-    driver: bridge
+    elastic:
+    s3:
 
 volumes:
-  elasticsearch-data:
-    driver: local
+    elasticsearch-data:
+        driver: local
+    s3-master-data:
+        driver: local
+    s3-volume-data:
+        driver: local
+    s3-filer-data:
+        driver: local
+
+services:
+    # -------------------- Database -------------------- #
+    elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+        environment:
+            - discovery.type=single-node
+            - xpack.security.enabled=false
+        ports:
+            - 9200:9200
+        networks:
+            - elastic
+        volumes:
+            - elasticsearch-data:/usr/share/elasticsearch/data
+
+    kibana:
+        image: docker.elastic.co/kibana/kibana:8.17.0
+        environment:
+            - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+        ports:
+            - 5601:5601
+        depends_on:
+            - elasticsearch
+        networks:
+            - elastic
+
+    # -------------------- Object Storage -------------------- #
+    s3-master:
+        image: chrislusf/seaweedfs
+        restart: on-failure
+        ports:
+            - 9333:9333
+        command: "master -ip=s3-master -ip.bind=0.0.0.0  -volumeSizeLimitMB=5 -volumePreallocate=false -mdir=/data"
+        volumes:
+            - s3-master-data:/data
+        networks:
+            - s3
+
+    s3-volume:
+        image: chrislusf/seaweedfs
+        restart: on-failure
+        ports:
+            - 8181:8181
+        command: 'volume -mserver="s3-master:9333" -ip.bind=0.0.0.0 -port=8181 -max=0 -metricsPort=9325 -dir=/data'
+        depends_on:
+            - s3-master
+        volumes:
+            - s3-volume-data:/data
+        networks:
+            - s3
+
+    s3-filer:
+        image: chrislusf/seaweedfs
+        restart: on-failure
+        ports:
+            - 8888:8888
+        command: 'filer -master="s3-master:9333" -ip.bind=0.0.0.0 -defaultStoreDir=/data'
+        tty: true
+        stdin_open: true
+        depends_on:
+            - s3-master
+            - s3-volume
+        volumes:
+            - s3-filer-data:/data
+        networks:
+            - s3
+
+    s3:
+        image: chrislusf/seaweedfs
+        restart: on-failure
+        ports:
+            - 8333:8333
+        command: 's3 -config=/conf/config.json -filer="s3-filer:8888" -ip.bind=0.0.0.0'
+        volumes:
+            - ./s3-dev-config.json:/conf/config.json
+        depends_on:
+            - s3-master
+            - s3-volume
+            - s3-filer
+        networks:
+            - s3

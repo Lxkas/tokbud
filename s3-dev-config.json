@@ -1,0 +1,50 @@
+{
+  "identities": [
+    {
+      "name": "admin",
+      "credentials": [
+        {
+          "accessKey": "admin",
+          "secretKey": "admin"
+        }
+      ],
+      "actions": [
+        "Admin",
+        "Read",
+        "ReadAcp",
+        "List",
+        "Tagging",
+        "Write",
+        "WriteAcp"
+      ]
+    },
+    {
+      "name": "ro_user",
+      "credentials": [
+        {
+          "accessKey": "ro",
+          "secretKey": "ro"
+        }
+      ],
+      "actions": [
+        "Read",
+        "List"
+      ]
+    },
+    {
+      "name": "normal",
+      "credentials": [
+        {
+          "accessKey": "normal",
+          "secretKey": "normal"
+        }
+      ],
+      "actions": [
+        "Read",
+        "List",
+        "Tagging",
+        "Write"
+      ]
+    }
+  ]
+}
