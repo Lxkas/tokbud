@@ -1,3 +1,3 @@
-import { ClerkOrganizationWebhook } from "../types/clerk";
+import { ClerkOrganizationWebhook } from "@/elysia/types/clerk";
 
 export function syncOrganizations(organizationWebhookData: ClerkOrganizationWebhook): void {}

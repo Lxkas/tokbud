@@ -1,4 +1,4 @@
 export interface ClerkOrganizationWebhook {
-    id: string;
-    name: string;
+	id: string;
+	name: string;
 }
