@@ -9,17 +9,15 @@ export const webhookController = new Elysia({ prefix: "/webhook" }).post(
 		switch (body.data.type) {
 			case ClerkWebhookEvent.ORGANIZATION_CREATED:
 			case ClerkWebhookEvent.ORGANIZATION_UPDATED:
-				upsertOrganization(body.data.data as ClerkOrganizationWebhook).catch((err) => {
+				return upsertOrganization(body.data.data as ClerkOrganizationWebhook).catch((err) => {
 					console.error(err);
 					return error("Internal Server Error", "something wrong on our end while upserting org");
 				});
-				break;
 			case ClerkWebhookEvent.ORGANIZATION_DELETED:
-				softDeleteOrganization(body.data.data as ClerkOrganizationWebhook).catch((err) => {
+				return softDeleteOrganization(body.data.data as ClerkOrganizationWebhook).catch((err) => {
 					console.error(err);
 					return error("Internal Server Error", "something wrong on our end while deleting org");
 				});
-				break;
 			default:
 				return error("Bad Request", "unsupported event");
 		}
