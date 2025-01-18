@@ -6,9 +6,33 @@ import { getUserOrganization } from "@/elysia/services/clerk";
 import { ES_IDX_ORGANIZATION } from "@/elysia/utils/const";
 import { jwtMiddleware } from "@/middleware";
 
+interface DistanceQuery {
+	lat?: string
+	lon?: string
+}
+  
+interface JWTPayload {
+	sub: string
+}
+  
+interface ElysiaDistanceContext {
+	query: DistanceQuery
+	jwt: {
+	  verify: (token: string) => Promise<JWTPayload | null>
+	}
+	set: {
+	  status: number
+	}
+	cookie: {
+	  auth: {
+		value: string
+	  }
+	}
+}
+  
 export const distanceController = new Elysia({ prefix: "/distance" })
 	.use(jwtMiddleware)
-	.get("/", async ({ query, jwt, set, cookie: { auth } }) => {
+	.get("/", async ({ query, jwt, set, cookie: { auth } }: ElysiaDistanceContext) => {
 		try {
 			const jwtPayload = await jwt.verify(auth.value);
 			if (!jwtPayload) {

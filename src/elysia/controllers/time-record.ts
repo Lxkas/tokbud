@@ -6,25 +6,46 @@ import { ES_IDX_TIME_RECORD } from "@/elysia/utils/const";
 import { isDocumentExisted } from "@/elysia/services/es";
 import { jwtMiddleware } from "@/middleware";
 
+interface ElysiaTimeRecordContext {
+    body: TimeRecordBody
+    jwt: {
+      verify: (token: string) => Promise<{ sub: string } | null>
+    }
+    set: {
+      status: number
+    }
+    cookie: {
+      auth: {
+        value: string
+      }
+    }
+  }
+
 interface TimeRecordBody {
-	user_id: string;
-	img_url: string;
-	shift_time?: string;
+    img_url: string;
+    shift_time?: string;
 }
 
 export const timeRecordController = new Elysia({ prefix: "/time-record" })
 	.use(jwtMiddleware)
-	.post("/clock-in", async ({ body, jwt }) => {
-		try {
-			const { user_id, img_url, shift_time } = body as TimeRecordBody;
-
-			// Validate required fields
-			if (!user_id || !img_url) {
-				return {
-					status: "error",
-					message: "Missing required fields: user_id and img_url are required",
-				};
-			}
+	.post("/clock-in", async ({ body, jwt, set, cookie: { auth } }: ElysiaTimeRecordContext) => {
+        try {
+            const jwtPayload = await jwt.verify(auth.value);
+            if (!jwtPayload) {
+                set.status = 401;
+                throw Error("Unauthorized");
+            }
+    
+            const user_id = jwtPayload.sub;
+            const { img_url, shift_time } = body as TimeRecordBody;
+    
+            // Validate required fields
+            if (!img_url) {
+                return {
+                    status: "error",
+                    message: "Missing required field: img_url is required",
+                };
+            }
 
 			// Get current date for checking and document creation
 			const now = new Date();
@@ -89,17 +110,24 @@ export const timeRecordController = new Elysia({ prefix: "/time-record" })
 			};
 		}
 	})
-	.post("/clock-out", async ({ body }: { body: TimeRecordBody }) => {
-		try {
-			const { user_id, img_url, shift_time } = body;
-
-			// Validate required fields
-			if (!user_id || !img_url) {
-				return {
-					status: "error",
-					message: "Missing required fields: user_id and img_url are required",
-				};
-			}
+	.post("/clock-out", async ({ body, jwt, set, cookie: { auth } }: ElysiaTimeRecordContext) => {
+        try {
+            const jwtPayload = await jwt.verify(auth.value);
+            if (!jwtPayload) {
+                set.status = 401;
+                throw Error("Unauthorized");
+            }
+    
+            const user_id = jwtPayload.sub;
+            const { img_url, shift_time } = body as TimeRecordBody;
+    
+            // Validate required fields
+            if (!img_url) {
+                return {
+                    status: "error",
+                    message: "Missing required field: img_url is required",
+                };
+            }
 
 			// Check if document exists for today
 			const currentDate = new Date().toISOString().split("T")[0];

@@ -2,11 +2,10 @@ import Elysia from "elysia";
 import { OvertimeRecordDoc } from "@/elysia/types/es";
 import { esClient } from "@/elysia/utils/es";
 import { getUserOrganization } from "@/elysia/services/clerk";
-import { getWorkingHours } from "@/elysia/services/working-hours";
 import { ES_IDX_OVERTIME_RECORD } from "@/elysia/utils/const";
+import { jwtMiddleware } from "@/middleware";
 
 interface OvertimeClockInBody {
-    user_id: string;
     img_url: string;
     reason: string;
     shift_time?: string;
@@ -14,21 +13,48 @@ interface OvertimeClockInBody {
 
 interface OvertimeClockOutBody {
     document_id: string;
-    user_id: string;
     img_url: string;
     shift_time?: string;
 }
 
+interface JWTPayload {
+    sub: string
+  }
+  
+  interface ElysiaOvertimeContext {
+    body: OvertimeClockInBody | OvertimeClockOutBody
+    jwt: {
+      verify: (token: string) => Promise<JWTPayload | null>
+    }
+    set: {
+      status: number
+    }
+    cookie: {
+      auth: {
+        value: string
+      }
+    }
+  }
+
 export const overtimeController = new Elysia({ prefix: "/overtime" })
-    .post("/clock-in", async ({ body }: { body: OvertimeClockInBody }) => {
+    .use(jwtMiddleware)    
+    .post("/clock-in", async ({ body, jwt, set, cookie: { auth } }: ElysiaOvertimeContext) => {
         try {
-            const { user_id, img_url, reason, shift_time } = body;
+            const jwtPayload = await jwt.verify(auth.value);
+            if (!jwtPayload) {
+                set.status = 401;
+                throw Error("Unauthorized");
+            }
+
+            const user_id = jwtPayload.sub;
+            console.log(user_id)
+            const { img_url, reason, shift_time } = body as OvertimeClockInBody;
 
             // Validate required fields
-            if (!user_id || !img_url || !reason) {
+            if (!img_url || !reason) {
                 return {
                     status: "error",
-                    message: "Missing required fields: user_id, img_url, and reason are required",
+                    message: "Missing required fields: img_url and reason are required",
                 };
             }
 
@@ -88,15 +114,22 @@ export const overtimeController = new Elysia({ prefix: "/overtime" })
             };
         }
     })
-    .post("/clock-out", async ({ body }: { body: OvertimeClockOutBody }) => {
+    .post("/clock-out", async ({ body, jwt, set, cookie: { auth } }: ElysiaOvertimeContext) => {
         try {
-            const { document_id, user_id, img_url, shift_time } = body;
+            const jwtPayload = await jwt.verify(auth.value);
+            if (!jwtPayload) {
+                set.status = 401;
+                throw Error("Unauthorized");
+            }
+
+            const user_id = jwtPayload.sub;
+            const { document_id, img_url, shift_time } = body as OvertimeClockOutBody;
 
             // Validate required fields
-            if (!document_id || !user_id || !img_url) {
+            if (!document_id || !img_url) {
                 return {
                     status: "error",
-                    message: "Missing required fields: document_id, user_id, and img_url are required",
+                    message: "Missing required fields: document_id and img_url are required",
                 };
             }
 
