@@ -1,4 +1,5 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
+import jwt from "@elysiajs/jwt";
 
 export default clerkMiddleware();
 
@@ -10,3 +11,13 @@ export const config = {
 		"/(api|trpc)(.*)",
 	],
 };
+
+if (!process.env.JWT_SECRET) {
+	throw Error("Missing JWT_SECRET");
+}
+
+export const jwtMiddleware = jwt({
+	name: "jwt",
+	secret: process.env.JWT_SECRET ?? "",
+	alg: "HS256",
+});

@@ -4,6 +4,7 @@ import { esClient } from "@/elysia/utils/es";
 import { getUserOrganization } from "@/elysia/services/clerk";
 import { ES_IDX_TIME_RECORD } from "@/elysia/utils/const";
 import { isDocumentExisted } from "@/elysia/services/es";
+import { jwtMiddleware } from "@/middleware";
 
 interface TimeRecordBody {
 	user_id: string;
@@ -12,9 +13,10 @@ interface TimeRecordBody {
 }
 
 export const timeRecordController = new Elysia({ prefix: "/time-record" })
-	.post("/clock-in", async ({ body }: { body: TimeRecordBody }) => {
+	.use(jwtMiddleware)
+	.post("/clock-in", async ({ body, jwt }) => {
 		try {
-			const { user_id, img_url, shift_time } = body;
+			const { user_id, img_url, shift_time } = body as TimeRecordBody;
 
 			// Validate required fields
 			if (!user_id || !img_url) {

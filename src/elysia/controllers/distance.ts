@@ -4,23 +4,22 @@ import { getDistance } from "geolib";
 import { esClient } from "@/elysia/utils/es";
 import { getUserOrganization } from "@/elysia/services/clerk";
 import { ES_IDX_ORGANIZATION } from "@/elysia/utils/const";
+import { jwtMiddleware } from "@/middleware";
 
-export const distanceController = new Elysia({ prefix: "/distance" }).get(
-	"/",
-	async ({
-		headers,
-	}: {
-		headers: {
-			"user-id"?: string;
-			"user-lat"?: string;
-			"user-lon"?: string;
-		};
-	}) => {
+export const distanceController = new Elysia({ prefix: "/distance" })
+	.use(jwtMiddleware)
+	.get("/", async ({ query, jwt, set, cookie: { auth } }) => {
 		try {
+			const jwtPayload = await jwt.verify(auth.value);
+			if (!jwtPayload) {
+				set.status = 401;
+				throw Error("Unauthorized");
+			}
+
 			// 1. Validate headers
-			const userId = headers["user-id"];
-			const userLat = headers["user-lat"];
-			const userLon = headers["user-lon"];
+			const userId = jwtPayload.sub;
+			const userLat = query["lat"];
+			const userLon = query["lon"];
 
 			if (!userId || !userLat || !userLon) {
 				return {
@@ -82,5 +81,4 @@ export const distanceController = new Elysia({ prefix: "/distance" }).get(
 				message: error instanceof Error ? error.message : "Unknown error occurred",
 			};
 		}
-	},
-);
+	});
