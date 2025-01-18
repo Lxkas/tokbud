@@ -3,15 +3,30 @@ import { distanceController } from "./controllers/distance";
 import { webhookController } from "./controllers/webhook";
 import { timeRecordController } from "./controllers/time-record";
 import { jwtMiddleware } from "@/middleware";
-import { overtimeController } from "./controllers/overtime-record";
 import { workingHoursController } from "./controllers/working-hours";
 
+interface DevSessionParams {
+	userId: string
+}
+  
+interface ElysiaDevSessionContext {
+	params: DevSessionParams
+	jwt: {
+	  	sign: (payload: { sub: string }) => Promise<string>
+	}
+	cookie: {
+		auth: {
+			value: string
+		}
+	}
+}
+  
 export const elysiaApp = new Elysia({ prefix: "/api" })
 	.use(jwtMiddleware)
-	.get("/dev-session/:userId", async ({ params, jwt, cookie: { auth } }) => {
-		const token = await jwt.sign({
+	.get("/dev-session/:userId", async ({ params, jwt, cookie: { auth } }: ElysiaDevSessionContext) => {
+	  	const token = await jwt.sign({
 			sub: params.userId,
-		});
+	});
 
 		console.log(token);
 
@@ -22,7 +37,6 @@ export const elysiaApp = new Elysia({ prefix: "/api" })
 	.use(distanceController)
 	.use(webhookController)
 	.use(timeRecordController)
-	.use(overtimeController)
 	.use(workingHoursController);
 
 export type ElysiaApp = typeof elysiaApp;

@@ -13,65 +13,48 @@ export interface OrganizationDoc extends BaseDoc {
 	};
 }
 
-export interface TimeRecordDoc {
+interface TimeShift {
+    shift_time?: string;
+    system_time: string;
+    image_url: string;
+  }
+  
+  interface ShiftRecord {
+    start_time: TimeShift;
+    end_time?: TimeShift;
+  }
+  
+  export interface TimeRecordDoc {
     user_id: string;
     date: string;
     organization_id: string;
-    clock_in?: {
-        shift_time?: string;
-        system_time: string;
-        image_url: string;
-    };
-    clock_out?: {
-        shift_time?: string;
-        system_time: string;
-        image_url: string;
-    };
+    shift_type: 'regular' | 'overtime';
+    shift_id?: string;
+    shifts: ShiftRecord[];
     status: 'complete' | 'incomplete';
-}
-
-export interface OvertimeRecordDoc{
+    overtime_details?: {
+      ot_hours?: number;
+      reason?: string;
+    };
+  }
+  
+  export interface WorkingHoursResponse {
     user_id: string;
-    date: string;
-    shift_id: string;
-    organization_id: string;
-    start_time: {
-        shift_time?: string;
-        system_time: string;
+    shifts: {
+      document_id: string;
+      shift_type: 'regular' | 'overtime';
+      shift_id?: string;
+      start_time?: {
+        time: string;
         image_url: string;
-    };
-    end_time?: {
-        shift_time?: string;
-        system_time: string;
+      };
+      end_time?: {
+        time: string;
         image_url: string;
-    };
-    status: 'complete' | 'incomplete';
-    ot_hours?: number;
-    reason: string;
-}
-
-export interface WorkingHoursResponse {
-    user_id: string;
-    normal_shift?: {
-        document_id: string;
-        clock_in?: {
-            time: string;
-            image_url: string;
-        };
-        clock_out?: {
-            time: string;
-            image_url: string;
-        };
-    };
-    overtime_shifts: Array<{
-        document_id: string;
-        start_time: {
-            time: string;
-            image_url: string;
-        };
-        end_time?: {
-            time: string;
-            image_url: string;
-        };
-    }>;
-}
+      };
+      overtime_details?: {
+        reason?: string;
+        ot_hours?: number;
+      };
+    }[];
+  }
