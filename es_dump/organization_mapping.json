@@ -1,0 +1,25 @@
+{
+    "organization": {
+      "mappings": {
+        "properties": {
+          "code": {
+            "type": "keyword"
+          },
+          "id": {
+            "type": "keyword"
+          },
+          "location": {
+            "type": "geo_point"
+          },
+          "name": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword"
+              }
+            }
+          }
+        }
+      }
+    }
+  }

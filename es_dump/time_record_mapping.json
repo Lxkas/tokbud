@@ -1,0 +1,92 @@
+{
+    "time_record": {
+      "mappings": {
+        "properties": {
+          "date": {
+            "type": "date",
+            "format": "strict_date"
+          },
+          "organization_id": {
+            "type": "keyword"
+          },
+          "overtime_details": {
+            "enabled": false,
+            "properties": {
+              "ot_hours": {
+                "type": "float"
+              },
+              "reason": {
+                "type": "text"
+              }
+            }
+          },
+          "shift_id": {
+            "type": "keyword"
+          },
+          "shift_type": {
+            "type": "keyword"
+          },
+          "shifts": {
+            "type": "nested",
+            "properties": {
+              "0": {
+                "properties": {
+                  "end_time": {
+                    "properties": {
+                      "image_url": {
+                        "type": "text",
+                        "fields": {
+                          "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                          }
+                        }
+                      },
+                      "shift_time": {
+                        "type": "date"
+                      },
+                      "system_time": {
+                        "type": "date"
+                      }
+                    }
+                  }
+                }
+              },
+              "end_time": {
+                "properties": {
+                  "image_url": {
+                    "type": "keyword"
+                  },
+                  "shift_time": {
+                    "type": "date"
+                  },
+                  "system_time": {
+                    "type": "date"
+                  }
+                }
+              },
+              "start_time": {
+                "properties": {
+                  "image_url": {
+                    "type": "keyword"
+                  },
+                  "shift_time": {
+                    "type": "date"
+                  },
+                  "system_time": {
+                    "type": "date"
+                  }
+                }
+              }
+            }
+          },
+          "status": {
+            "type": "keyword"
+          },
+          "user_id": {
+            "type": "keyword"
+          }
+        }
+      }
+    }
+  }

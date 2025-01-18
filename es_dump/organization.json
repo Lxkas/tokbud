@@ -1,0 +1,28 @@
+{
+    "_index": "organization",
+    "_id": "wchBc5QBgqoXrq-R0ed-",
+    "_score": 1,
+    "_source": {
+      "id": "org_2riGCGwJV4T5JwxLOFajkNqc03U",
+      "code": "BRANCH01",
+      "name": "SOCN อำเภอวังน้อย",
+      "location": {
+        "lat": 14.185150071703854,
+        "lon": 100.66188841225014
+      }
+    }
+}
+{
+    "_index": "organization",
+    "_id": "wshBc5QBgqoXrq-R0ed-",
+    "_score": 1,
+    "_source": {
+      "id": "org_2riGD6KpA4GTWNhTGRxCMhjpQiS",
+      "code": "BRANCH02",
+      "name": "NORC-B อำเภอสารภี",
+      "location": {
+        "lat": 18.742503463109045,
+        "lon": 99.0086259231996
+      }
+    }
+  }
