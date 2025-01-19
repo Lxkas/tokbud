@@ -41,20 +41,23 @@ interface TimeShift {
   export interface WorkingHoursResponse {
     user_id: string;
     shifts: {
-      document_id: string;
-      shift_type: 'regular' | 'overtime';
-      shift_id?: string;
-      start_time?: {
-        time: string;
-        image_url: string;
-      };
-      end_time?: {
-        time: string;
-        image_url: string;
-      };
-      overtime_details?: {
-        reason?: string;
-        ot_hours?: number;
-      };
+        document_id: string;
+        shift_type: 'regular' | 'overtime';
+        shift_id?: string;
+        start_time?: {
+            system_time: string;
+            image_url: string;
+            shift_time?: string;
+        };
+        end_time?: {
+            system_time: string;
+            image_url: string;
+            shift_time?: string;
+        };
+        overtime_details?: {
+            reason?: string;  // Make optional again
+            ot_hours?: number;  // Make optional again
+        };
+        status: 'complete' | 'incomplete';
     }[];
-  }
+}

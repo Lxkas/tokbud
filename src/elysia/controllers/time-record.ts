@@ -3,12 +3,12 @@ import { TimeRecordDoc } from "@/elysia/types/es";
 import { esClient } from "@/elysia/utils/es";
 import { getUserOrganization } from "@/elysia/services/clerk";
 import { ES_IDX_TIME_RECORD } from "@/elysia/utils/const";
-import { isDocumentExisted } from "@/elysia/services/es";
+import { isDocumentExisted , getActiveOvertimeShifts } from "@/elysia/services/es";
 import { jwtMiddleware } from "@/middleware";
 
 interface TimeRecordBody {
     img_url: string;
-    shift_time?: string;
+    shift_time: string;
     reason?: string; // For overtime shifts
 }
 
@@ -39,11 +39,11 @@ export const timeRecordController = new Elysia({ prefix: "/time-record" })
                 set.status = 401;
                 throw Error("Unauthorized");
             }
-
+    
             const user_id = jwtPayload.sub;
             const { img_url, shift_time, reason } = body;
             const shift_type = params.shift_type as 'regular' | 'overtime';
-
+    
             // Validate shift type
             if (!['regular', 'overtime'].includes(shift_type)) {
                 return {
@@ -51,22 +51,22 @@ export const timeRecordController = new Elysia({ prefix: "/time-record" })
                     message: "Invalid shift type. Must be either 'regular' or 'overtime'",
                 };
             }
-
+    
             // Validate required fields
-            if (!img_url || (shift_type === 'overtime' && !reason)) {
+            if (!img_url || !shift_time || (shift_type === 'overtime' && !reason)) {
                 return {
                     status: "error",
                     message: shift_type === 'overtime' 
-                        ? "Missing required fields: img_url and reason are required for overtime"
-                        : "Missing required field: img_url is required",
+                        ? "Missing required fields: img_url, shift_time, and reason are required for overtime"
+                        : "Missing required fields: img_url and shift_time are required",
                 };
             }
-
+    
             // Get current date and time
             const now = new Date();
             const currentDate = now.toISOString().split("T")[0];
             const systemTime = now.toISOString();
-
+    
             // For regular shifts, check if already clocked in today
             if (shift_type === 'regular') {
                 const existingRecord = await isDocumentExisted(user_id, currentDate);
@@ -80,7 +80,7 @@ export const timeRecordController = new Elysia({ prefix: "/time-record" })
                     };
                 }
             }
-
+    
             // Get organization info
             const clerkResponse = await getUserOrganization(user_id);
             if (!clerkResponse || !clerkResponse[0]?.organization?.id) {
@@ -89,12 +89,12 @@ export const timeRecordController = new Elysia({ prefix: "/time-record" })
                     message: "Could not find organization for this user",
                 };
             }
-
+    
             // Generate shift_id for overtime
             const shift_id = shift_type === 'overtime' 
                 ? `${user_id}_ot_${systemTime.replace(/[-:\.]/g, '').slice(0, 14)}`
                 : undefined;
-
+    
             // Create document
             const timeRecordDoc: TimeRecordDoc = {
                 user_id,
@@ -106,7 +106,7 @@ export const timeRecordController = new Elysia({ prefix: "/time-record" })
                     start_time: {
                         system_time: systemTime,
                         image_url: img_url,
-                        ...(shift_time && { shift_time })
+                        shift_time
                     }
                 }],
                 status: "incomplete",
@@ -117,13 +117,32 @@ export const timeRecordController = new Elysia({ prefix: "/time-record" })
                     }
                 })
             };
-
+    
             // Index the document
             const result = await esClient.index({
                 index: ES_IDX_TIME_RECORD,
                 document: timeRecordDoc,
             });
-
+    
+            // For overtime shifts, check for other active shifts
+            if (shift_type === 'overtime') {
+                const activeOvertimeShifts = await getActiveOvertimeShifts(user_id);
+                const otherActiveShifts = activeOvertimeShifts.filter(id => id !== result._id);
+                
+                return {
+                    status: "ok",
+                    data: {
+                        document_id: result._id,
+                        shift_id,
+                        ...(otherActiveShifts.length > 0 && {
+                            warning: "You have other active overtime shifts",
+                            active_overtime_shifts: otherActiveShifts
+                        })
+                    },
+                };
+            }
+    
+            // Return normal response for regular shifts
             return {
                 status: "ok",
                 data: {
@@ -131,7 +150,7 @@ export const timeRecordController = new Elysia({ prefix: "/time-record" })
                     shift_id
                 },
             };
-
+    
         } catch (error) {
             return {
                 status: "error",
@@ -160,10 +179,10 @@ export const timeRecordController = new Elysia({ prefix: "/time-record" })
             }
 
             // Validate required fields
-            if (!img_url || !document_id) {
+            if (!img_url || !document_id || !shift_time) {
                 return {
                     status: "error",
-                    message: "Missing required fields: document_id and img_url are required",
+                    message: "Missing required fields: document_id, img_url, and shift_time are required",
                 };
             }
 
@@ -213,7 +232,7 @@ export const timeRecordController = new Elysia({ prefix: "/time-record" })
 						end_time: {
 							system_time: systemTime,
 							image_url: img_url,
-							...(shift_time && { shift_time })
+							shift_time
 						}
 					}],
 					status: 'complete'
