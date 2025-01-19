@@ -2,6 +2,11 @@ import { esClient } from "@/elysia/utils/es";
 import { TimeRecordDoc } from "@/elysia/types/es";
 import { ES_IDX_TIME_RECORD } from "@/elysia/utils/const";
 
+interface ActiveShift {
+    document_id: string;
+    date: string;
+}
+
 export async function isDocumentExisted(userId: string, date: string) {
     try {
         const result = await esClient.search({
@@ -38,26 +43,49 @@ export async function isDocumentExisted(userId: string, date: string) {
     }
 }
 
-export async function getActiveOvertimeShifts(user_id: string): Promise<string[]> {
+export async function getActiveShifts(user_id: string, shift_type: 'regular' | 'overtime'): Promise<ActiveShift[]> {
     const result = await esClient.search<TimeRecordDoc>({
         index: ES_IDX_TIME_RECORD,
         query: {
             bool: {
                 must: [
                     { term: { user_id } },
-                    { term: { shift_type: 'overtime' } },
+                    { term: { shift_type } },
                     { term: { status: 'incomplete' } }
                 ]
-            },
-            // No date filter here, intentionally getting all dates
+            }
         }
     });
 
-    // Filter out any undefined IDs and ensure we only return strings
-    const activeShiftIds = result.hits.hits
-        .map(hit => hit._id)
-        .filter((id): id is string => id !== undefined);
-        
-    return activeShiftIds;
+    return result.hits.hits
+        .filter(hit => hit._id && hit._source?.date)
+        .map(hit => ({
+            document_id: hit._id!,
+            date: hit._source!.date
+        }));
 }
 
+export async function getTodayRegularShift(user_id: string, date: string): Promise<ActiveShift | null> {
+    const result = await esClient.search<TimeRecordDoc>({
+        index: ES_IDX_TIME_RECORD,
+        query: {
+            bool: {
+                must: [
+                    { term: { user_id } },
+                    { term: { date } },
+                    { term: { shift_type: 'regular' } }
+                ]
+            }
+        }
+    });
+
+    const hit = result.hits.hits[0];
+    if (!hit || !hit._id || !hit._source?.date) {
+        return null;
+    }
+
+    return {
+        document_id: hit._id,
+        date: hit._source.date
+    };
+}

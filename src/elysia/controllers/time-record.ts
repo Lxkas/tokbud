@@ -3,7 +3,7 @@ import { TimeRecordDoc } from "@/elysia/types/es";
 import { esClient } from "@/elysia/utils/es";
 import { getUserOrganization } from "@/elysia/services/clerk";
 import { ES_IDX_TIME_RECORD } from "@/elysia/utils/const";
-import { isDocumentExisted , getActiveOvertimeShifts } from "@/elysia/services/es";
+import { getActiveShifts, getTodayRegularShift } from "@/elysia/services/es";
 import { jwtMiddleware } from "@/middleware";
 
 interface TimeRecordBody {
@@ -39,11 +39,11 @@ export const timeRecordController = new Elysia({ prefix: "/time-record" })
                 set.status = 401;
                 throw Error("Unauthorized");
             }
-    
+
             const user_id = jwtPayload.sub;
             const { img_url, shift_time, reason } = body;
             const shift_type = params.shift_type as 'regular' | 'overtime';
-    
+
             // Validate shift type
             if (!['regular', 'overtime'].includes(shift_type)) {
                 return {
@@ -51,7 +51,7 @@ export const timeRecordController = new Elysia({ prefix: "/time-record" })
                     message: "Invalid shift type. Must be either 'regular' or 'overtime'",
                 };
             }
-    
+
             // Validate required fields
             if (!img_url || !shift_time || (shift_type === 'overtime' && !reason)) {
                 return {
@@ -61,26 +61,12 @@ export const timeRecordController = new Elysia({ prefix: "/time-record" })
                         : "Missing required fields: img_url and shift_time are required",
                 };
             }
-    
+
             // Get current date and time
             const now = new Date();
             const currentDate = now.toISOString().split("T")[0];
             const systemTime = now.toISOString();
-    
-            // For regular shifts, check if already clocked in today
-            if (shift_type === 'regular') {
-                const existingRecord = await isDocumentExisted(user_id, currentDate);
-                if (existingRecord.existed) {
-                    return {
-                        status: "error",
-                        message: "You have already clocked in today",
-                        data: {
-                            document_id: existingRecord.document_id,
-                        },
-                    };
-                }
-            }
-    
+
             // Get organization info
             const clerkResponse = await getUserOrganization(user_id);
             if (!clerkResponse || !clerkResponse[0]?.organization?.id) {
@@ -89,45 +75,96 @@ export const timeRecordController = new Elysia({ prefix: "/time-record" })
                     message: "Could not find organization for this user",
                 };
             }
-    
-            // Generate shift_id for overtime
-            const shift_id = shift_type === 'overtime' 
-                ? `${user_id}_ot_${systemTime.replace(/[-:\.]/g, '').slice(0, 14)}`
-                : undefined;
-    
-            // Create document
-            const timeRecordDoc: TimeRecordDoc = {
-                user_id,
-                date: shift_time.split("T")[0],
-                organization_id: clerkResponse[0].organization.id,
-                shift_type,
-                shift_id,
-                shifts: [{
-                    start_time: {
-                        system_time: systemTime,
-                        image_url: img_url,
-                        shift_time
+
+            if (shift_type === 'regular') {
+                // Check for today's shift first
+                const todayShift = await getTodayRegularShift(user_id, currentDate);
+                if (todayShift) {
+                    const activeShifts = await getActiveShifts(user_id, 'regular');
+                    const otherActiveShifts = activeShifts.filter(shift => shift.date !== currentDate);
+
+                    return {
+                        status: "error",
+                        message: "You have already clocked in today",
+                        data: {
+                            document_id: todayShift.document_id,
+                            date: todayShift.date,
+                            ...(otherActiveShifts.length > 0 && {
+                                warning: "You have incomplete regular shifts from other days",
+                                active_shifts: otherActiveShifts
+                            })
+                        }
+                    };
+                }
+
+                // Check for other active shifts even if no shift today
+                const activeShifts = await getActiveShifts(user_id, 'regular');
+
+                // Create the regular shift document
+                const timeRecordDoc: TimeRecordDoc = {
+                    user_id,
+                    date: currentDate,
+                    organization_id: clerkResponse[0].organization.id,
+                    shift_type,
+                    shifts: [{
+                        start_time: {
+                            system_time: systemTime,
+                            image_url: img_url,
+                            shift_time
+                        }
+                    }],
+                    status: "incomplete"
+                };
+
+                const result = await esClient.index({
+                    index: ES_IDX_TIME_RECORD,
+                    document: timeRecordDoc,
+                });
+
+                return {
+                    status: "ok",
+                    data: {
+                        document_id: result._id,
+                        ...(activeShifts.length > 0 && {
+                            warning: "You have incomplete regular shifts from other days",
+                            active_shifts: activeShifts
+                        })
                     }
-                }],
-                status: "incomplete",
-                ...(shift_type === 'overtime' && {
+                };
+
+            } else {
+                // Generate shift_id for overtime
+                const shift_id = `${user_id}_ot_${systemTime.replace(/[-:\.]/g, '').slice(0, 14)}`;
+
+                // Create overtime document
+                const timeRecordDoc: TimeRecordDoc = {
+                    user_id,
+                    date: currentDate,
+                    organization_id: clerkResponse[0].organization.id,
+                    shift_type,
+                    shift_id,
+                    shifts: [{
+                        start_time: {
+                            system_time: systemTime,
+                            image_url: img_url,
+                            shift_time
+                        }
+                    }],
+                    status: "incomplete",
                     overtime_details: {
                         reason,
-                        ot_hours: 0 // Will be calculated on clock-out
+                        ot_hours: 0
                     }
-                })
-            };
-    
-            // Index the document
-            const result = await esClient.index({
-                index: ES_IDX_TIME_RECORD,
-                document: timeRecordDoc,
-            });
-    
-            // For overtime shifts, check for other active shifts
-            if (shift_type === 'overtime') {
-                const activeOvertimeShifts = await getActiveOvertimeShifts(user_id);
-                const otherActiveShifts = activeOvertimeShifts.filter(id => id !== result._id);
+                };
+
+                const result = await esClient.index({
+                    index: ES_IDX_TIME_RECORD,
+                    document: timeRecordDoc,
+                });
+
+                // Check for other active overtime shifts
+                const activeShifts = await getActiveShifts(user_id, 'overtime');
+                const otherActiveShifts = activeShifts.filter(shift => shift.document_id !== result._id);
                 
                 return {
                     status: "ok",
@@ -135,22 +172,13 @@ export const timeRecordController = new Elysia({ prefix: "/time-record" })
                         document_id: result._id,
                         shift_id,
                         ...(otherActiveShifts.length > 0 && {
-                            warning: "You have other active overtime shifts",
-                            active_overtime_shifts: otherActiveShifts
+                            warning: "You have incomplete overtime shifts",
+                            active_shifts: otherActiveShifts
                         })
-                    },
+                    }
                 };
             }
-    
-            // Return normal response for regular shifts
-            return {
-                status: "ok",
-                data: {
-                    document_id: result._id,
-                    shift_id
-                },
-            };
-    
+
         } catch (error) {
             return {
                 status: "error",
