@@ -4,7 +4,7 @@ import { getWorkingHours } from "@/elysia/services/working-hours";
 import { jwtMiddleware } from "@/middleware";
 
 interface WorkingHoursQuery {
-    date?: string
+    date?: string;
 }
   
 interface JWTPayload {
@@ -38,13 +38,6 @@ export const workingHoursController = new Elysia()
 
             const userId = jwtPayload.sub;
             const date = query.date;
-
-            if (!date) {
-                return {
-                    status: "error",
-                    message: "Missing required query parameter: date",
-                };
-            }
 
             // Validate user exists in Clerk
             const clerkResponse = await getUserOrganization(userId);

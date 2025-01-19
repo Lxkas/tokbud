@@ -98,7 +98,7 @@ export const timeRecordController = new Elysia({ prefix: "/time-record" })
             // Create document
             const timeRecordDoc: TimeRecordDoc = {
                 user_id,
-                date: currentDate,
+                date: shift_time.split("T")[0],
                 organization_id: clerkResponse[0].organization.id,
                 shift_type,
                 shift_id,

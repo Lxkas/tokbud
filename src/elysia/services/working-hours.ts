@@ -1,21 +1,25 @@
 import { esClient } from "@/elysia/utils/es";
 import { ES_IDX_TIME_RECORD } from "@/elysia/utils/const";
-import { TimeRecordDoc, WorkingHoursResponse } from "@/elysia/types/es";
+import { TimeRecordDoc, WorkingHoursResponse, WorkingHoursShift } from "@/elysia/types/es";
 
-export async function getWorkingHours(userId: string, date: string): Promise<WorkingHoursResponse> {
+export async function getWorkingHours(userId: string, date: string | undefined): Promise<WorkingHoursResponse> {
     try {
+        // Build query based on whether date is provided
+        const query = {
+            bool: {
+                must: [
+                    { term: { user_id: userId }},
+                    ...(date ? [{ term: { date } }] : [])
+                ]
+            }
+        };
+
         const result = await esClient.search<TimeRecordDoc>({
             index: ES_IDX_TIME_RECORD,
-            query: {
-                bool: {
-                    must: [
-                        { term: { user_id: userId }},
-                        { term: { date: date }}
-                    ]
-                }
-            },
+            query,
             sort: [
-                { shift_type: "asc" },
+                { date: "asc" },  // First sort by date
+                { shift_type: "asc" },  // Then sort regular shifts before overtime
                 {
                     "shifts.start_time.system_time": { 
                         order: "asc",
@@ -32,49 +36,58 @@ export async function getWorkingHours(userId: string, date: string): Promise<Wor
             shifts: []
         };
 
-        const totalShifts = typeof result.hits.total === 'number' 
-            ? result.hits.total 
-            : result.hits.total?.value ?? 0;
+        if (result.hits.hits.length > 0) {
+            // Group shifts by date
+            const shiftsByDate = result.hits.hits.reduce((acc: { [key: string]: WorkingHoursShift[] }, hit) => {
+                if (!hit._source || !hit._id) return acc;
 
-        if (totalShifts > 0) {
-            response.shifts = result.hits.hits
-                .filter(hit => hit._id && hit._source)
-                .map(hit => {
-                    const shift = {
-                        document_id: hit._id!,
-                        shift_type: hit._source!.shift_type,
-                        ...(hit._source!.shift_id && { shift_id: hit._source!.shift_id }),
-                        start_time: hit._source!.shifts[0]?.start_time ? {
-                            system_time: hit._source!.shifts[0].start_time.system_time,
-                            image_url: hit._source!.shifts[0].start_time.image_url,
-                            ...(hit._source!.shifts[0].start_time.shift_time && {
-                                shift_time: hit._source!.shifts[0].start_time.shift_time
-                            })
-                        } : undefined,
-                        end_time: hit._source!.shifts[0]?.end_time ? {
-                            system_time: hit._source!.shifts[0].end_time.system_time,
-                            image_url: hit._source!.shifts[0].end_time.image_url,
-                            ...(hit._source!.shifts[0].end_time.shift_time && {
-                                shift_time: hit._source!.shifts[0].end_time.shift_time
-                            })
-                        } : undefined,
-                        status: hit._source!.status
-                    } as any;  // Using any temporarily to build the object
+                const date = hit._source.date;
+                if (!acc[date]) {
+                    acc[date] = [];
+                }
 
-                    // Add overtime_details only if it's an overtime shift
-                    if (hit._source!.shift_type === 'overtime' && hit._source!.overtime_details) {
-                        shift.overtime_details = {
-                            ...(hit._source!.overtime_details.reason && { 
-                                reason: hit._source!.overtime_details.reason 
-                            }),
-                            ...(typeof hit._source!.overtime_details.ot_hours !== 'undefined' && { 
-                                ot_hours: hit._source!.overtime_details.ot_hours 
-                            })
-                        };
-                    }
+                const shift: WorkingHoursShift = {
+                    document_id: hit._id,
+                    shift_type: hit._source.shift_type,
+                    ...(hit._source.shift_id && { shift_id: hit._source.shift_id }),
+                    start_time: hit._source.shifts[0]?.start_time ? {
+                        system_time: hit._source.shifts[0].start_time.system_time,
+                        image_url: hit._source.shifts[0].start_time.image_url,
+                        ...(hit._source.shifts[0].start_time.shift_time && {
+                            shift_time: hit._source.shifts[0].start_time.shift_time
+                        })
+                    } : undefined,
+                    end_time: hit._source.shifts[0]?.end_time ? {
+                        system_time: hit._source.shifts[0].end_time.system_time,
+                        image_url: hit._source.shifts[0].end_time.image_url,
+                        ...(hit._source.shifts[0].end_time.shift_time && {
+                            shift_time: hit._source.shifts[0].end_time.shift_time
+                        })
+                    } : undefined,
+                    status: hit._source.status
+                };
 
-                    return shift;
-                });
+                // Add overtime_details only if it's an overtime shift
+                if (hit._source.shift_type === 'overtime' && hit._source.overtime_details) {
+                    shift.overtime_details = {
+                        ...(hit._source.overtime_details.reason && { 
+                            reason: hit._source.overtime_details.reason 
+                        }),
+                        ...(typeof hit._source.overtime_details.ot_hours !== 'undefined' && { 
+                            ot_hours: hit._source.overtime_details.ot_hours 
+                        })
+                    };
+                }
+
+                acc[date].push(shift);
+                return acc;
+            }, {});
+
+            // Convert the grouped shifts to array format
+            response.shifts = Object.entries(shiftsByDate).map(([date, shifts]) => ({
+                date,  // This is already UTC date from ES
+                shift: shifts
+            }));
         }
 
         return response;
