@@ -12,13 +12,13 @@ export interface OrganizationDoc extends BaseDoc {
 		lon: number;
 	};
 }
-interface TimeShift {
-  shift_time?: string;
+export interface TimeShift {
+  shift_time: string;
   system_time: string;
   image_url: string;
 }
 
-interface ShiftRecord {
+export interface ShiftRecord {
   start_time: TimeShift;
   end_time?: TimeShift;
 }

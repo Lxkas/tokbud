@@ -1,80 +1,89 @@
 {
     "_index": "time_record",
-    "_id": "3Mg3epQBgqoXrq-RF-fB",
+    "_id": "ilNGgpQBVD49uWf7S4zW",
     "_score": 1,
     "_source": {
       "user_id": "user_2riGJ090dbQNR41ccdBjkzvA3f6",
-      "date": "2025-01-18",
+      "date": "2025-01-20",
       "organization_id": "org_2riGCGwJV4T5JwxLOFajkNqc03U",
       "shift_type": "overtime",
-      "shift_id": "user_2riGJ090dbQNR41ccdBjkzvA3f6_ot_20250118T16201",
+      "shift_id": "user_2riGJ090dbQNR41ccdBjkzvA3f6_ot_20250120T05535",
       "shifts": [
         {
           "start_time": {
-            "system_time": "2025-01-18T16:20:18.020Z",
-            "image_url": "https://storage.example.com/ot-start-123.jpg"
+            "system_time": "2025-01-20T05:53:52.188Z",
+            "image_url": "https://storage.example.com/clock-in-456.jpg",
+            "shift_time": "2025-01-20T13:00:00Z"
           },
           "end_time": {
-            "system_time": "2025-01-18T16:20:37.026Z",
-            "image_url": "https://storage.example.com/ot-end-124.jpg",
-            "shift_time": "2024-01-18T21:00:00Z"
+            "system_time": "2025-01-20T05:53:56.968Z",
+            "image_url": "https://storage.example.com/clock-out-456.jpg",
+            "shift_time": "2025-01-20T17:45:00Z"
           }
         }
       ],
       "status": "complete",
-      "overtime_details": {
+      "shift_details": {
         "reason": "LOL",
-        "ot_hours": 0.01
+        "hours": 4.75
       }
     }
 }
+
 {
     "_index": "time_record",
-    "_id": "3cg3epQBgqoXrq-Rsuf3",
+    "_id": "i1NGgpQBVD49uWf7e4xk",
     "_score": 1,
     "_source": {
       "user_id": "user_2riGJ090dbQNR41ccdBjkzvA3f6",
-      "date": "2025-01-18",
+      "date": "2025-01-20",
       "organization_id": "org_2riGCGwJV4T5JwxLOFajkNqc03U",
       "shift_type": "overtime",
-      "shift_id": "user_2riGJ090dbQNR41ccdBjkzvA3f6_ot_20250118T16205",
+      "shift_id": "user_2riGJ090dbQNR41ccdBjkzvA3f6_ot_20250120T05540",
       "shifts": [
         {
           "start_time": {
-            "system_time": "2025-01-18T16:20:57.492Z",
-            "image_url": "https://storage.example.com/ot-start-123.jpg"
+            "system_time": "2025-01-20T05:54:04.192Z",
+            "image_url": "https://storage.example.com/ot-start-123.jpg",
+            "shift_time": "2025-01-20T22:00:00Z"
           }
         }
       ],
       "status": "incomplete",
-      "overtime_details": {
+      "shift_details": {
         "reason": "LOL",
-        "ot_hours": 0
+        "hours": 0
       }
     }
 }
+
 {
     "_index": "time_record",
-    "_id": "28g2epQBgqoXrq-RTedE",
+    "_id": "iVNGgpQBVD49uWf7BIx9",
     "_score": 1,
     "_source": {
       "user_id": "user_2riGJ090dbQNR41ccdBjkzvA3f6",
-      "date": "2025-01-18",
+      "date": "2025-01-20",
       "organization_id": "org_2riGCGwJV4T5JwxLOFajkNqc03U",
       "shift_type": "regular",
       "shifts": [
         {
           "start_time": {
-            "system_time": "2025-01-18T16:19:25.881Z",
-            "image_url": "https://storage.example.com/clock-in-123.jpg"
+            "system_time": "2025-01-20T05:53:32.630Z",
+            "image_url": "https://storage.example.com/clock-in-123.jpg",
+            "shift_time": "2025-01-20T09:00:00Z"
           },
           "end_time": {
-            "system_time": "2025-01-18T16:19:54.325Z",
+            "system_time": "2025-01-20T05:53:39.151Z",
             "image_url": "https://storage.example.com/clock-out-123.jpg",
-            "shift_time": "2024-01-18T17:00:00Z"
+            "shift_time": "2025-01-19T17:00:00Z"
           }
         }
       ],
-      "status": "complete"
+      "status": "complete",
+      "shift_details": {
+        "reason": "[system] regular shift",
+        "hours": 8
+      }
     }
   }

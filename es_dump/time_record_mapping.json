@@ -9,10 +9,9 @@
           "organization_id": {
             "type": "keyword"
           },
-          "overtime_details": {
-            "enabled": false,
+          "shift_details": {
             "properties": {
-              "ot_hours": {
+              "hours": {
                 "type": "float"
               },
               "reason": {
@@ -29,29 +28,6 @@
           "shifts": {
             "type": "nested",
             "properties": {
-              "0": {
-                "properties": {
-                  "end_time": {
-                    "properties": {
-                      "image_url": {
-                        "type": "text",
-                        "fields": {
-                          "keyword": {
-                            "type": "keyword",
-                            "ignore_above": 256
-                          }
-                        }
-                      },
-                      "shift_time": {
-                        "type": "date"
-                      },
-                      "system_time": {
-                        "type": "date"
-                      }
-                    }
-                  }
-                }
-              },
               "end_time": {
                 "properties": {
                   "image_url": {
