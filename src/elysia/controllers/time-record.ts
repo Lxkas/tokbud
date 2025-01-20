@@ -53,12 +53,10 @@ export const timeRecordController = new Elysia({ prefix: "/time-record" })
             }
 
             // Validate required fields
-            if (!img_url || !shift_time || (shift_type === 'overtime' && !reason)) {
+            if (!img_url || !shift_time || !reason) {
                 return {
                     status: "error",
-                    message: shift_type === 'overtime' 
-                        ? "Missing required fields: img_url, shift_time, and reason are required for overtime"
-                        : "Missing required fields: img_url and shift_time are required",
+                    message: "Missing required fields: img_url, shift_time, and reason are required",
                 };
             }
 
@@ -113,7 +111,11 @@ export const timeRecordController = new Elysia({ prefix: "/time-record" })
                             shift_time
                         }
                     }],
-                    status: "incomplete"
+                    status: "incomplete",
+                    shift_details: {  // Added shift_details for regular shifts
+                        reason,
+                        hours: 0
+                    }
                 };
 
                 const result = await esClient.index({
@@ -151,9 +153,9 @@ export const timeRecordController = new Elysia({ prefix: "/time-record" })
                         }
                     }],
                     status: "incomplete",
-                    overtime_details: {
+                    shift_details: {
                         reason,
-                        ot_hours: 0
+                        hours: 0
                     }
                 };
 
@@ -250,32 +252,38 @@ export const timeRecordController = new Elysia({ prefix: "/time-record" })
                     };
                 }
 
+                // Validate start_time shift_time exists
+                if (!existingDoc._source.shifts[0]?.start_time?.shift_time) {
+                    return {
+                        status: "error",
+                        message: "`shift_time` is missing from `start_time` in the record",
+                    };
+                }
+
                 // Prepare update document
                 const now = new Date();
                 const systemTime = now.toISOString();
-                
-                const updateDoc: any = {
-					'shifts': [{
-						...existingDoc._source.shifts[0],
-						end_time: {
-							system_time: systemTime,
-							image_url: img_url,
-							shift_time
-						}
-					}],
-					status: 'complete'
-				};
 
-                // Calculate OT hours for overtime shifts
-                if (shift_type === 'overtime') {
-					const startTime = new Date(existingDoc._source.shifts[0].start_time.system_time);
-					const endTime = now;
-					const hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-					updateDoc.overtime_details = {
-						...existingDoc._source.overtime_details,
-						ot_hours: parseFloat(hours.toFixed(2))
-					};
-				}
+                // Calculate hours for both regular and overtime shifts
+                const startTime = new Date(existingDoc._source.shifts[0].start_time.shift_time);
+                const endTime = new Date(shift_time);
+                const hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+                
+                const updateDoc = {
+                    shifts: [{
+                        ...existingDoc._source.shifts[0],
+                        end_time: {
+                            system_time: systemTime,
+                            image_url: img_url,
+                            shift_time
+                        }
+                    }],
+                    status: 'complete',
+                    shift_details: {
+                        ...existingDoc._source.shift_details,
+                        hours: parseFloat(hours.toFixed(2))
+                    }
+                };
 
                 // Update the document
                 await esClient.update({

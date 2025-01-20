@@ -64,20 +64,12 @@ export async function getWorkingHours(userId: string, date: string | undefined):
                             shift_time: hit._source.shifts[0].end_time.shift_time
                         })
                     } : undefined,
-                    status: hit._source.status
+                    status: hit._source.status,
+                    shift_details: {
+                        hours: hit._source.shift_details.hours,
+                        reason: hit._source.shift_details.reason
+                    }
                 };
-
-                // Add overtime_details only if it's an overtime shift
-                if (hit._source.shift_type === 'overtime' && hit._source.overtime_details) {
-                    shift.overtime_details = {
-                        ...(hit._source.overtime_details.reason && { 
-                            reason: hit._source.overtime_details.reason 
-                        }),
-                        ...(typeof hit._source.overtime_details.ot_hours !== 'undefined' && { 
-                            ot_hours: hit._source.overtime_details.ot_hours 
-                        })
-                    };
-                }
 
                 acc[date].push(shift);
                 return acc;
