@@ -1,88 +1,164 @@
 import { esClient } from "@/elysia/utils/es";
 import { ES_IDX_TIME_RECORD } from "@/elysia/utils/const";
-import { TimeRecordDoc, WorkingHoursResponse, WorkingHoursShift } from "@/elysia/types/es";
 
-export async function getWorkingHours(userId: string, date: string | undefined): Promise<WorkingHoursResponse> {
+interface ChangeLogEntry {
+    timestamp: string;
+    shift_start_time: string;
+    shift_end_time: string;
+    shift_reason?: string;
+    lat?: number;
+    lon?: number;
+    edit_reason: string;
+    is_system: boolean;
+}
+
+// Helper function to safely parse JSON array
+function parseChangeLogArray(jsonArray: string[] | undefined): ChangeLogEntry[] | null {
+    if (!jsonArray || !Array.isArray(jsonArray)) return null;
+    
     try {
-        // Build query based on whether date is provided
-        const query = {
-            bool: {
-                must: [
-                    { term: { user_id: userId }},
-                    ...(date ? [{ term: { date } }] : [])
-                ]
-            }
-        };
+        return jsonArray.map(jsonString => JSON.parse(jsonString) as ChangeLogEntry);
+    } catch (error) {
+        console.error('Error parsing change_log array:', error);
+        return null;
+    }
+}
 
-        const result = await esClient.search<TimeRecordDoc>({
-            index: ES_IDX_TIME_RECORD,
-            query,
-            sort: [
-                { date: "asc" },  // First sort by date
-                { shift_type: "asc" },  // Then sort regular shifts before overtime
-                {
-                    "shifts.start_time.system_time": { 
-                        order: "asc",
-                        nested: {
-                            path: "shifts"
-                        }
-                    }
-                }
-            ]
-        });
+interface TimeDetails {
+    shift_time: string;
+    timestamp: string;
+    image_url?: string;
+    lat?: number;
+    lon?: number;
+}
 
-        const response: WorkingHoursResponse = {
-            user_id: userId,
-            shifts: []
-        };
+interface WorkingHour {
+    date: string;
+    doc_id: string;
+    user_id: string;
+    org_id: string;
+    shift_type: string;
+    status: string;
+    reason?: string;
+    start_time?: TimeDetails;
+    end_time?: TimeDetails;
+    change_log?: string[];
+}
 
-        if (result.hits.hits.length > 0) {
-            // Group shifts by date
-            const shiftsByDate = result.hits.hits.reduce((acc: { [key: string]: WorkingHoursShift[] }, hit) => {
-                if (!hit._source || !hit._id) return acc;
+interface WorkingHourShift {
+    doc_id: string;
+    shift_type: string;
+    status: string;
+    reason?: string;
+    start_time?: TimeDetails;
+    end_time?: TimeDetails;
+    change_log?: ChangeLogEntry[] | null;
+}
 
-                const date = hit._source.date;
-                if (!acc[date]) {
-                    acc[date] = [];
-                }
+interface WorkingHoursByDate {
+    date: string;
+    shift: WorkingHourShift[];
+}
 
-                const shift: WorkingHoursShift = {
-                    document_id: hit._id,
-                    shift_type: hit._source.shift_type,
-                    ...(hit._source.shift_id && { shift_id: hit._source.shift_id }),
-                    start_time: hit._source.shifts[0]?.start_time ? {
-                        system_time: hit._source.shifts[0].start_time.system_time,
-                        image_url: hit._source.shifts[0].start_time.image_url,
-                        ...(hit._source.shifts[0].start_time.shift_time && {
-                            shift_time: hit._source.shifts[0].start_time.shift_time
-                        })
-                    } : undefined,
-                    end_time: hit._source.shifts[0]?.end_time ? {
-                        system_time: hit._source.shifts[0].end_time.system_time,
-                        image_url: hit._source.shifts[0].end_time.image_url,
-                        ...(hit._source.shifts[0].end_time.shift_time && {
-                            shift_time: hit._source.shifts[0].end_time.shift_time
-                        })
-                    } : undefined,
-                    status: hit._source.status,
-                    shift_details: {
-                        hours: hit._source.shift_details.hours,
-                        reason: hit._source.shift_details.reason
-                    }
-                };
+interface WorkingHourResponse {
+    status: string;
+    data: {
+        user_id: string;
+        org_id: string;
+        all_shift: WorkingHoursByDate[];
+    }[];
+}
 
-                acc[date].push(shift);
-                return acc;
-            }, {});
+export async function getWorkingHours(
+    params: {
+        user_id?: string;
+        org_id?: string;
+        start_date?: string;
+        end_date?: string;
+    }
+): Promise<WorkingHourResponse> {
+    const { user_id, org_id, start_date, end_date } = params;
 
-            // Convert the grouped shifts to array format
-            response.shifts = Object.entries(shiftsByDate).map(([date, shifts]) => ({
-                date,  // This is already UTC date from ES
-                shift: shifts
-            }));
+    // Validate that at least one of user_id or org_id is provided
+    if (!user_id && !org_id) {
+        throw new Error("At least one of user_id or org_id must be specified");
+    }
+
+    try {
+        // Build the query
+        const mustClauses = [];
+
+        // Add user_id and/or org_id conditions
+        if (user_id) mustClauses.push({ term: { user_id } });
+        if (org_id) mustClauses.push({ term: { org_id } });
+
+        // Add date range conditions if provided
+        if (start_date || end_date) {
+            const rangeClause: any = { range: { date: {} } };
+            if (start_date) rangeClause.range.date.gte = start_date;
+            if (end_date) rangeClause.range.date.lte = end_date;
+            mustClauses.push(rangeClause);
         }
 
-        return response;
+        const result = await esClient.search<WorkingHour>({
+            index: ES_IDX_TIME_RECORD,
+            query: {
+                bool: {
+                    must: mustClauses
+                }
+            },
+            sort: [
+                { date: "asc" },
+                { "start_time.timestamp": { order: "asc" } }
+            ],
+            size: 10000 // Adjust based on your needs
+        });
+
+        // Group results by user_id and date
+        const groupedData = result.hits.hits.reduce((acc: { [key: string]: { [key: string]: WorkingHourShift[] } }, hit) => {
+            if (!hit._source) return acc;
+            
+            const source = hit._source;
+            const userId = source.user_id;
+            const date = source.date;
+
+            if (!acc[userId]) {
+                acc[userId] = {};
+            }
+            if (!acc[userId][date]) {
+                acc[userId][date] = [];
+            }
+
+            // Remove redundant fields that are already in parent objects
+            const shiftData: WorkingHourShift = {
+                doc_id: hit._id as string,
+                shift_type: source.shift_type,
+                status: source.status,
+                reason: source.reason,
+                start_time: source.start_time,
+                end_time: source.end_time,
+                change_log: parseChangeLogArray(source.change_log)
+            };
+            
+            acc[userId][date].push(shiftData);
+            return acc;
+        }, {});
+
+        // Format the response
+        const formattedData = Object.entries(groupedData).map(([userId, dateShifts]) => ({
+            user_id: userId,
+            org_id: result.hits.hits.find(hit => hit._source?.user_id === userId)?._source?.org_id || '',
+            all_shift: Object.entries(dateShifts).map(([date, shifts]) => ({
+                date,
+                shift: shifts
+            }))
+        }));
+
+        return {
+            status: "ok",
+            data: formattedData
+        };
+
     } catch (error) {
         console.error('Error getting working hours:', error);
         throw error;
