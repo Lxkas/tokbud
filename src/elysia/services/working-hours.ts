@@ -5,6 +5,8 @@ interface ChangeLogEntry {
     timestamp: string;
     shift_start_time: string;
     shift_end_time: string;
+    clock_in_image_url?: string;
+    clock_out_image_url?: string;
     shift_reason?: string;
     lat?: number;
     lon?: number;
@@ -20,6 +22,29 @@ function parseChangeLogArray(jsonArray: string[] | undefined): ChangeLogEntry[] 
         return jsonArray.map(jsonString => JSON.parse(jsonString) as ChangeLogEntry);
     } catch (error) {
         console.error('Error parsing change_log array:', error);
+        return null;
+    }
+}
+
+// Helper function to calculate hours between two timestamps
+function calculateHours(startTime: string | undefined, endTime: string | undefined): number | null {
+    if (!startTime || !endTime) return null;
+    
+    try {
+        const start = new Date(startTime);
+        const end = new Date(endTime);
+        
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+            return null;
+        }
+
+        const diffInMilliseconds = end.getTime() - start.getTime();
+        const diffInHours = diffInMilliseconds / (1000 * 60 * 60);
+        
+        // Round to 2 decimal places
+        return Math.round(diffInHours * 100) / 100;
+    } catch (error) {
+        console.error('Error calculating hours:', error);
         return null;
     }
 }
@@ -53,6 +78,8 @@ interface WorkingHourShift {
     start_time?: TimeDetails;
     end_time?: TimeDetails;
     change_log?: ChangeLogEntry[] | null;
+    actual_hours: number | null;
+    official_hours: number | null;
 }
 
 interface WorkingHoursByDate {
@@ -130,6 +157,16 @@ export async function getWorkingHours(
             }
 
             // Remove redundant fields that are already in parent objects
+            const actual_hours = calculateHours(
+                source.start_time?.timestamp,
+                source.end_time?.timestamp
+            );
+            
+            const official_hours = calculateHours(
+                source.start_time?.shift_time,
+                source.end_time?.shift_time
+            );
+
             const shiftData: WorkingHourShift = {
                 doc_id: hit._id as string,
                 shift_type: source.shift_type,
@@ -137,7 +174,9 @@ export async function getWorkingHours(
                 reason: source.reason,
                 start_time: source.start_time,
                 end_time: source.end_time,
-                change_log: parseChangeLogArray(source.change_log)
+                change_log: parseChangeLogArray(source.change_log),
+                actual_hours,
+                official_hours
             };
             
             acc[userId][date].push(shiftData);
