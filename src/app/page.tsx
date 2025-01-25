@@ -27,18 +27,28 @@ function formatDate(date: Date | undefined, formatString: string) {
 	return format(date, formatString);
 }
 
-export default function TimeTrackerPage() {
+// PLACEHOLDER!
+const mockApi = {
+	fetchShifts: async (): Promise<Shift[]> => {
+		return [
+			{ id: "1", name: "Morning Shift", startTime: "06:00", endTime: "14:00" },
+			{ id: "2", name: "Afternoon Shift", startTime: "14:00", endTime: "22:00" },
+			{ id: "3", name: "Night Shift", startTime: "22:00", endTime: "06:00" },
+		];
+	},
+
+	// TODO: mission critical. Add a lot of error handling and state recovery in the event of a failure.
+	saveEvent: async (event: ClockEvent): Promise<void> => {
+		console.log("Event saved:", event);
+	},
+};
+
+export default function TimeTracker() {
 	const [currentTime, setCurrentTime] = useState<Date>();
 	const [isClockedIn, setIsClockedIn] = useState(false);
 	const [events, setEvents] = useState<ClockEvent[]>([]);
 	const [selectedShift, setSelectedShift] = useState<string | "">("");
-
-	// Can come from an API or database xd
-	const shifts: Shift[] = [
-		{ id: "1", name: "Morning Shift", startTime: "06:00", endTime: "14:00" },
-		{ id: "2", name: "Afternoon Shift", startTime: "14:00", endTime: "22:00" },
-		{ id: "3", name: "Night Shift", startTime: "22:00", endTime: "06:00" },
-	];
+	const [shifts, setShifts] = useState<Shift[]>([]);
 
 	useEffect(() => {
 		setCurrentTime(new Date());
@@ -47,7 +57,16 @@ export default function TimeTrackerPage() {
 		return () => clearInterval(timer);
 	}, []);
 
-	const handleClockInOut = () => {
+	useEffect(() => {
+		async function loadShifts() {
+			const fetchedShifts = await mockApi.fetchShifts();
+			setShifts(fetchedShifts);
+		}
+
+		loadShifts();
+	}, []);
+
+	const handleClockInOut = async () => {
 		if (!isClockedIn && !selectedShift) {
 			alert("Please select a shift before clocking in.");
 			return;
@@ -59,12 +78,15 @@ export default function TimeTrackerPage() {
 			timestamp: new Date(),
 		};
 
+		// this should be optimistic
 		setEvents([newEvent, ...events]);
 		setIsClockedIn(!isClockedIn);
 
 		if (isClockedIn) {
 			setSelectedShift("");
 		}
+
+		await mockApi.saveEvent(newEvent);
 	};
 
 	return (
