@@ -1,25 +1,36 @@
 import { esClient } from "@/elysia/utils/es";
 import { ES_IDX_TIME_RECORD } from "@/elysia/utils/const";
-
-interface ChangeLogEntry {
-    timestamp: string;
-    shift_start_time: string;
-    shift_end_time: string;
-    clock_in_image_url?: string;
-    clock_out_image_url?: string;
-    shift_reason?: string;
-    lat?: number;
-    lon?: number;
-    edit_reason: string;
-    is_system: boolean;
-}
+import { 
+    ChangeLogEntry,
+    WorkingHour,
+    WorkingHourResponse,
+    WorkingHourShift 
+} from "@/elysia/types/working-hours";
 
 // Helper function to safely parse JSON array
 function parseChangeLogArray(jsonArray: string[] | undefined): ChangeLogEntry[] | null {
     if (!jsonArray || !Array.isArray(jsonArray)) return null;
     
     try {
-        return jsonArray.map(jsonString => JSON.parse(jsonString) as ChangeLogEntry);
+        // console.log(jsonArray)
+        return jsonArray.map(jsonString => {
+            const parsedLog = JSON.parse(jsonString);
+            
+            // Validate the parsed data has the required structure
+            if (!parsedLog.timestamp || !parsedLog.edit_reason || !parsedLog.data) {
+                throw new Error('Invalid change log entry structure');
+            }
+            
+            // Ensure is_system is properly handled regardless of string or boolean input
+            const changeLogEntry: ChangeLogEntry = {
+                ...parsedLog,
+                is_system: typeof parsedLog.is_system === 'string' 
+                    ? parsedLog.is_system.toLowerCase() === 'true'
+                    : !!parsedLog.is_system
+            };
+            
+            return changeLogEntry;
+        });
     } catch (error) {
         console.error('Error parsing change_log array:', error);
         return null;
@@ -47,53 +58,6 @@ function calculateHours(startTime: string | undefined, endTime: string | undefin
         console.error('Error calculating hours:', error);
         return null;
     }
-}
-
-interface TimeDetails {
-    shift_time: string;
-    timestamp: string;
-    image_url?: string;
-    lat?: number;
-    lon?: number;
-}
-
-interface WorkingHour {
-    date: string;
-    doc_id: string;
-    user_id: string;
-    org_id: string;
-    shift_type: string;
-    status: string;
-    reason?: string;
-    start_time?: TimeDetails;
-    end_time?: TimeDetails;
-    change_log?: string[];
-}
-
-interface WorkingHourShift {
-    doc_id: string;
-    shift_type: string;
-    status: string;
-    reason?: string;
-    start_time?: TimeDetails;
-    end_time?: TimeDetails;
-    change_log?: ChangeLogEntry[] | null;
-    actual_hours: number | null;
-    official_hours: number | null;
-}
-
-interface WorkingHoursByDate {
-    date: string;
-    shift: WorkingHourShift[];
-}
-
-interface WorkingHourResponse {
-    status: string;
-    data: {
-        user_id: string;
-        org_id: string;
-        all_shift: WorkingHoursByDate[];
-    }[];
 }
 
 export async function getWorkingHours(
@@ -166,11 +130,11 @@ export async function getWorkingHours(
                 source.start_time?.shift_time,
                 source.end_time?.shift_time
             );
-
+            console.log(source.change_log)
             const shiftData: WorkingHourShift = {
                 doc_id: hit._id as string,
                 shift_type: source.shift_type,
-                status: source.status,
+                is_complete: source.is_complete,
                 reason: source.reason,
                 start_time: source.start_time,
                 end_time: source.end_time,

@@ -2,6 +2,7 @@ import { Elysia } from "elysia";
 import { distanceController } from "./controllers/distance";
 import { webhookController } from "./controllers/webhook";
 import { timeRecordController } from "./controllers/time-record";
+import { timeRecordController2 } from "./controllers/time-record2";
 import { jwtMiddleware } from "@/middleware";
 import { workingHoursController } from "./controllers/working-hours";
 
@@ -37,6 +38,7 @@ export const elysiaApp = new Elysia({ prefix: "/api" })
     .use(distanceController)
     .use(webhookController)
     .use(timeRecordController)
+    .use(timeRecordController2)
     .use(workingHoursController);
 
 // Log all registered routes

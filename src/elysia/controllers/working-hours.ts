@@ -2,33 +2,7 @@ import Elysia from "elysia";
 import { getUserOrganization } from "@/elysia/services/clerk";
 import { getWorkingHours } from "@/elysia/services/working-hours";
 import { jwtMiddleware } from "@/middleware";
-
-interface WorkingHoursQuery {
-    user_id?: string;
-    org_id?: string;
-    start_date?: string;
-    end_date?: string;
-}
-
-interface JWTPayload {
-    sub: string;
-    org_id?: string;
-}
-
-interface ElysiaWorkingHoursContext {
-    query: WorkingHoursQuery;
-    jwt: {
-        verify: (token: string) => Promise<JWTPayload | null>;
-    };
-    set: {
-        status: number;
-    };
-    cookie: {
-        auth: {
-            value: string;
-    };
-  };
-}
+import { ElysiaWorkingHoursContext } from "@/elysia/types/working-hours";
 
 export const workingHoursController = new Elysia()
     .use(jwtMiddleware)
