@@ -3,12 +3,12 @@ import { jwtMiddleware } from "@/middleware";
 import { getUserOrganization } from "@/elysia/services/clerk";
 import { esClient } from "@/elysia/utils/es";
 import { ES_IDX_TIME_RECORD } from "@/elysia/utils/const";
-import { TimeRecordDoc, ElysiaTimeRecordContext, TimeInfo, ElysiaClockOutContext } from "@/elysia/types/time-record";
-import { isValidUTCDateTime, createChangeLogJSON } from "@/elysia/utils/helpers";
+import { TimeRecordDoc, ElysiaClockInContext, TimeInfo, ElysiaClockOutContext } from "@/elysia/types/time-record";
+import { isValidUTCDateTime, createChangeLogJSON, convertToTimezone } from "@/elysia/utils/helpers";
 
 export const timeRecordController2 = new Elysia({ prefix: "/time-record-2" })
     .use(jwtMiddleware)
-    .post("/clock-in", async ({ body, jwt, set, cookie: { auth } }: ElysiaTimeRecordContext) => {
+    .post("/clock-in", async ({ body, jwt, set, cookie: { auth } }: ElysiaClockInContext) => {
         try {
             // Verify JWT and get user_id
             const jwtPayload = await jwt.verify(auth.value);
@@ -53,12 +53,13 @@ export const timeRecordController2 = new Elysia({ prefix: "/time-record-2" })
 
             const org_id = clerkResponse[0].organization.id;
             const currentTime = new Date().toISOString();
+            const currentTimeUTC7 = convertToTimezone(currentTime, 7);
             const recordDate = shift_time.split('T')[0];
 
             // Prepare time info
             const startTimeInfo: TimeInfo = {
                 shift_time,
-                timestamp: currentTime,
+                timestamp: currentTimeUTC7,
                 image_url,
                 lat,
                 lon
@@ -193,9 +194,10 @@ export const timeRecordController2 = new Elysia({ prefix: "/time-record-2" })
 
                 // Prepare end time info
                 const currentTime = new Date().toISOString();
+                const currentTimeUTC7 = convertToTimezone(currentTime, 7);
                 const endTimeInfo: TimeInfo = {
                     shift_time,
-                    timestamp: currentTime,
+                    timestamp: currentTimeUTC7,
                     image_url,
                     lat,
                     lon

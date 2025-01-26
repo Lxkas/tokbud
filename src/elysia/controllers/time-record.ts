@@ -1,5 +1,5 @@
 import Elysia from "elysia";
-import { TimeRecordDoc, ShiftRecord } from "@/elysia/types/es";
+// import { TimeRecordDoc, ShiftRecord } from "@/elysia/types/es";
 import { esClient } from "@/elysia/utils/es";
 import { getUserOrganization } from "@/elysia/services/clerk";
 import { ES_IDX_TIME_RECORD } from "@/elysia/utils/const";

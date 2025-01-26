@@ -38,7 +38,7 @@ function parseChangeLogArray(jsonArray: string[] | undefined): ChangeLogEntry[] 
 }
 
 // Helper function to calculate hours between two timestamps
-function calculateHours(startTime: string | undefined, endTime: string | undefined): number | null {
+function calculateDuration(startTime: string | undefined, endTime: string | undefined): string | null {
     if (!startTime || !endTime) return null;
     
     try {
@@ -50,12 +50,21 @@ function calculateHours(startTime: string | undefined, endTime: string | undefin
         }
 
         const diffInMilliseconds = end.getTime() - start.getTime();
-        const diffInHours = diffInMilliseconds / (1000 * 60 * 60);
         
-        // Round to 2 decimal places
-        return Math.round(diffInHours * 100) / 100;
+        // Calculate hours, minutes, and seconds
+        const hours = Math.floor(diffInMilliseconds / (1000 * 60 * 60));
+        const minutes = Math.floor((diffInMilliseconds % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diffInMilliseconds % (1000 * 60)) / 1000);
+        
+        // Pad with leading zeros if needed
+        const formattedHours = hours.toString().padStart(2, '0');
+        const formattedMinutes = minutes.toString().padStart(2, '0');
+        const formattedSeconds = seconds.toString().padStart(2, '0');
+        
+        // Return in format HH:MM:SS
+        return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
     } catch (error) {
-        console.error('Error calculating hours:', error);
+        console.error('Error calculating duration:', error);
         return null;
     }
 }
@@ -121,12 +130,12 @@ export async function getWorkingHours(
             }
 
             // Remove redundant fields that are already in parent objects
-            const actual_hours = calculateHours(
+            const actual_hours = calculateDuration(
                 source.start_time?.timestamp,
                 source.end_time?.timestamp
             );
             
-            const official_hours = calculateHours(
+            const official_hours = calculateDuration(
                 source.start_time?.shift_time,
                 source.end_time?.shift_time
             );

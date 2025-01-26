@@ -57,3 +57,19 @@ export function createChangeLogJSON({
 
     return JSON.stringify(changeLog);
 }
+
+export function convertToTimezone(isoString: string, offsetHours: number): string {
+    const date = new Date(isoString);
+    const newDate = new Date(date.getTime() + (offsetHours * 60 * 60 * 1000));
+    return newDate.toISOString();
+}
+
+export function isValidDateFormat(date: string): boolean {
+    const regex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!regex.test(date)) return false;
+    
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return false;
+    
+    return true;
+}

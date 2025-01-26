@@ -3,6 +3,7 @@ import { getUserOrganization } from "@/elysia/services/clerk";
 import { getWorkingHours } from "@/elysia/services/working-hours";
 import { jwtMiddleware } from "@/middleware";
 import { ElysiaWorkingHoursContext } from "@/elysia/types/working-hours";
+import { isValidDateFormat } from "@/elysia/utils/helpers"
 
 export const workingHoursController = new Elysia()
     .use(jwtMiddleware)
@@ -16,21 +17,43 @@ export const workingHoursController = new Elysia()
             }
 
             const { user_id, org_id, start_date, end_date } = query;
+            const user_id_jwt = jwtPayload.sub;
+            const org_id_jwt = jwtPayload.org_id;
 
-            // Rule: At least one of user_id or org_id must be specified
+            // Determine request context and apply appropriate authorization
+            let effectiveUserId = user_id;
+            let effectiveOrgId = org_id;
+
+            // If query parameters are not provided, use JWT values (user context)
             if (!user_id && !org_id) {
-                set.status = 400;
-                throw new Error("At least one of user_id or org_id must be specified");
-            }
-
-            // Rule 3: If both user_id and org_id are specified, verify user belongs to organization
-            if (user_id && org_id) {
-                const clerkResponse = await getUserOrganization(user_id);
-                const userOrgId = clerkResponse?.[0]?.organization?.id;
+                effectiveUserId = user_id_jwt;
+                effectiveOrgId = org_id_jwt;
+            } else {
+                // Admin/Backend context - Additional security checks
                 
-                if (!userOrgId || userOrgId !== org_id) {
-                    set.status = 403;
-                    throw new Error("User does not belong to the specified organization");
+                // Check if user has permission to access other users' data
+                const hasAdminAccess = await checkAdminAccess(user_id_jwt, org_id_jwt);
+                if (!hasAdminAccess) {
+                    // If no admin access, can only access own data
+                    if (user_id && user_id !== user_id_jwt) {
+                        set.status = 403;
+                        throw new Error("Unauthorized to access other user's data");
+                    }
+                    if (org_id && org_id !== org_id_jwt) {
+                        set.status = 403;
+                        throw new Error("Unauthorized to access other organization's data");
+                    }
+                }
+
+                // Verify user belongs to organization if both are specified
+                if (effectiveUserId && effectiveOrgId) {
+                    const clerkResponse = await getUserOrganization(effectiveUserId);
+                    const userOrgId = clerkResponse?.[0]?.organization?.id;
+                    
+                    if (!userOrgId || userOrgId !== effectiveOrgId) {
+                        set.status = 403;
+                        throw new Error("User does not belong to the specified organization");
+                    }
                 }
             }
 
@@ -46,8 +69,8 @@ export const workingHoursController = new Elysia()
 
             // Get working hours data
             const workingHours = await getWorkingHours({
-                user_id,
-                org_id,
+                user_id: effectiveUserId,
+                org_id: effectiveOrgId,
                 start_date,
                 end_date
             });
@@ -71,13 +94,9 @@ export const workingHoursController = new Elysia()
         }
     });
 
-// Helper function to validate date format (YYYY-MM-DD)
-function isValidDateFormat(date: string): boolean {
-    const regex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!regex.test(date)) return false;
-    
-    const d = new Date(date);
-    if (isNaN(d.getTime())) return false;
-    
+
+async function checkAdminAccess(userId: string, orgId: string): Promise<boolean> {
+    // to be implement admin access check logic here
+    // check if user has admin role in the organization
     return true;
 }

@@ -18,6 +18,11 @@ export interface TimeRecordDoc {
     change_log: string[];
 }
 
+export interface JWTPayload {
+    sub: string;
+    org_id: string;
+}
+
 export interface ClockInBody {
     shift_type?: string;
     reason?: string;
@@ -27,10 +32,10 @@ export interface ClockInBody {
     lon: number;
 }
 
-export interface ElysiaTimeRecordContext {
+export interface ElysiaClockInContext {
     body: ClockInBody;
     jwt: {
-        verify: (token: string) => Promise<{ sub: string } | null>
+        verify: (token: string) => Promise<JWTPayload | null>
     };
     set: {
         status: number
@@ -53,7 +58,7 @@ export interface ClockOutBody {
 export interface ElysiaClockOutContext {
     body: ClockOutBody;
     jwt: {
-        verify: (token: string) => Promise<{ sub: string } | null>
+        verify: (token: string) => Promise<JWTPayload | null>
     };
     set: {
         status: number
