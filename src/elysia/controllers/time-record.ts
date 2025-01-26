@@ -1,63 +1,16 @@
 import Elysia from "elysia";
-// import { TimeRecordDoc, ShiftRecord } from "@/elysia/types/es";
-import { esClient } from "@/elysia/utils/es";
-import { getUserOrganization } from "@/elysia/services/clerk";
-import { ES_IDX_TIME_RECORD } from "@/elysia/utils/const";
-import { getActiveShifts, getTodayRegularShift } from "@/elysia/services/es";
 import { jwtMiddleware } from "@/middleware";
+import { getUserOrganization } from "@/elysia/services/clerk";
+import { esClient } from "@/elysia/utils/es";
+import { ES_IDX_TIME_RECORD } from "@/elysia/utils/const";
+import { TimeInfo, TimeRecordDoc, ElysiaClockInContext, ElysiaClockOutContext, ElysiaEditContext } from "@/elysia/types/time-record";
+import { isValidUTCDateTime, createChangeLogJSON, convertToTimezone } from "@/elysia/utils/helpers";
 
-interface TimeRecordBody {
-    img_url: string;
-    shift_time: string;
-    reason?: string; // For overtime shifts
-}
-
-interface ElysiaTimeRecordContext {
-    body: TimeRecordBody;
-    jwt: {
-        verify: (token: string) => Promise<{ sub: string } | null>
-    };
-    set: {
-        status: number
-    };
-    cookie: {
-        auth: {
-            value: string
-        }
-    };
-    params: {
-        shift_type: string;
-    };
-}
-
-interface EditTimeRecordBody {
-    document_id: string;
-    img_url_start?: string;
-    img_url_end?: string;
-    shift_start_time?: string;
-    shift_end_time?: string;
-    reason?: string;
-}
-
-interface ElysiaEditTimeRecordContext {
-    body: EditTimeRecordBody;
-    jwt: {
-        verify: (token: string) => Promise<{ sub: string } | null>
-    };
-    set: {
-        status: number
-    };
-    cookie: {
-        auth: {
-            value: string
-        }
-    };
-}
-
-export const timeRecordController = new Elysia({ prefix: "/time-record" })
+export const timeRecordController2 = new Elysia({ prefix: "/time-record-2" })
     .use(jwtMiddleware)
-    .post("/:shift_type/clock-in", async ({ body, jwt, set, cookie: { auth }, params }: ElysiaTimeRecordContext) => {
+    .post("/clock-in", async ({ body, jwt, set, cookie: { auth } }: ElysiaClockInContext) => {
         try {
+            // Verify JWT and get user_id
             const jwtPayload = await jwt.verify(auth.value);
             if (!jwtPayload) {
                 set.status = 401;
@@ -65,155 +18,105 @@ export const timeRecordController = new Elysia({ prefix: "/time-record" })
             }
 
             const user_id = jwtPayload.sub;
-            const { img_url, shift_time, reason } = body;
-            const shift_type = params.shift_type as 'regular' | 'overtime';
+            const { shift_type, reason, shift_time, image_url, lat, lon } = body;
 
-            // Validate shift type
-            if (!['regular', 'overtime'].includes(shift_type)) {
+            // Validate mandatory fields
+            const mandatoryFields = ['shift_time', 'image_url', 'lat', 'lon'];
+            const missingFields = mandatoryFields.filter(field => !(field in body));
+
+            if (missingFields.length > 0) {
+                set.status = 400;
                 return {
                     status: "error",
-                    message: "Invalid shift type. Must be either 'regular' or 'overtime'",
+                    message: `Missing mandatory fields: ${missingFields.join(', ')}`
                 };
             }
 
-            // Validate required fields
-            if (!img_url || !shift_time || !reason) {
+            // Validate shift_time format
+            if (!isValidUTCDateTime(shift_time)) {
+                set.status = 400;
                 return {
                     status: "error",
-                    message: "Missing required fields: img_url, shift_time, and reason are required",
+                    message: "Invalid shift_time format. Expected format: 2024-01-25T08:30:45.123Z"
                 };
             }
 
-            // Get current date and time
-            const now = new Date();
-            const currentDate = now.toISOString().split("T")[0];
-            const systemTime = now.toISOString();
-
-            // Get organization info
+            // Get organization ID
             const clerkResponse = await getUserOrganization(user_id);
             if (!clerkResponse || !clerkResponse[0]?.organization?.id) {
+                set.status = 404;
                 return {
                     status: "error",
                     message: "Could not find organization for this user",
                 };
             }
 
-            if (shift_type === 'regular') {
-                // Check for today's shift first
-                const todayShift = await getTodayRegularShift(user_id, currentDate);
-                if (todayShift) {
-                    const activeShifts = await getActiveShifts(user_id, 'regular');
-                    const otherActiveShifts = activeShifts.filter(shift => shift.date !== currentDate);
+            const org_id = clerkResponse[0].organization.id;
+            const currentTime = new Date().toISOString();
+            const currentTimeUTC7 = convertToTimezone(currentTime, 7);
+            const recordDate = shift_time.split('T')[0];
 
-                    return {
-                        status: "error",
-                        message: "You have already clocked in today",
-                        data: {
-                            document_id: todayShift.document_id,
-                            date: todayShift.date,
-                            ...(otherActiveShifts.length > 0 && {
-                                warning: "You have incomplete regular shifts from other days",
-                                active_shifts: otherActiveShifts
-                            })
-                        }
-                    };
+            // Prepare time info
+            const startTimeInfo: TimeInfo = {
+                shift_time,
+                timestamp: currentTimeUTC7,
+                image_url,
+                lat,
+                lon
+            };
+
+            // Create the document
+            const timeRecord: TimeRecordDoc = {
+                date: recordDate,
+                user_id,
+                org_id,
+                shift_type: shift_type || "",
+                is_complete: false,
+                reason: reason || "",
+                start_time: startTimeInfo,
+                end_time: null,
+                change_log: [
+                    createChangeLogJSON({
+                        isSystem: true,
+                        edit_reason: "[SYSTEM] regular clock-in",
+                        lat: startTimeInfo.lat,
+                        lon: startTimeInfo.lon,
+                        startTimeInfo: startTimeInfo,
+                        shift_reason: reason || ""
+                    })
+                ]
+            };
+
+            // Insert into Elasticsearch
+            const result = await esClient.index({
+                index: ES_IDX_TIME_RECORD,
+                document: timeRecord,
+            });
+
+            return {
+                status: "success",
+                data: {
+                    document_id: result._id
                 }
+            };
 
-                // Check for other active shifts even if no shift today
-                const activeShifts = await getActiveShifts(user_id, 'regular');
-
-                // Create the regular shift document
-                const timeRecordDoc: TimeRecordDoc = {
-                    user_id,
-                    date: currentDate,
-                    organization_id: clerkResponse[0].organization.id,
-                    shift_type,
-                    shifts: [{
-                        start_time: {
-                            system_time: systemTime,
-                            image_url: img_url,
-                            shift_time
-                        }
-                    }],
-                    status: "incomplete",
-                    shift_details: {  // Added shift_details for regular shifts
-                        reason,
-                        hours: 0
-                    }
-                };
-
-                const result = await esClient.index({
-                    index: ES_IDX_TIME_RECORD,
-                    document: timeRecordDoc,
-                });
-
-                return {
-                    status: "ok",
-                    data: {
-                        document_id: result._id,
-                        ...(activeShifts.length > 0 && {
-                            warning: "You have incomplete regular shifts from other days",
-                            active_shifts: activeShifts
-                        })
-                    }
-                };
-
+        } catch (error: unknown) {
+            // Type guard for objects with status property
+            if (error && typeof error === 'object' && 'status' in error) {
+                set.status = (error as { status: number }).status;
             } else {
-                // Generate shift_id for overtime
-                const shift_id = `${user_id}_ot_${systemTime.replace(/[-:\.]/g, '').slice(0, 14)}`;
-
-                // Create overtime document
-                const timeRecordDoc: TimeRecordDoc = {
-                    user_id,
-                    date: currentDate,
-                    organization_id: clerkResponse[0].organization.id,
-                    shift_type,
-                    shift_id,
-                    shifts: [{
-                        start_time: {
-                            system_time: systemTime,
-                            image_url: img_url,
-                            shift_time
-                        }
-                    }],
-                    status: "incomplete",
-                    shift_details: {
-                        reason,
-                        hours: 0
-                    }
-                };
-
-                const result = await esClient.index({
-                    index: ES_IDX_TIME_RECORD,
-                    document: timeRecordDoc,
-                });
-
-                // Check for other active overtime shifts
-                const activeShifts = await getActiveShifts(user_id, 'overtime');
-                const otherActiveShifts = activeShifts.filter(shift => shift.document_id !== result._id);
-                
-                return {
-                    status: "ok",
-                    data: {
-                        document_id: result._id,
-                        shift_id,
-                        ...(otherActiveShifts.length > 0 && {
-                            warning: "You have incomplete overtime shifts",
-                            active_shifts: otherActiveShifts
-                        })
-                    }
-                };
+                set.status = 500;
             }
-
-        } catch (error) {
+            
             return {
                 status: "error",
                 message: error instanceof Error ? error.message : "Unknown error occurred",
             };
         }
     })
-    .post("/:shift_type/clock-out", async ({ body, jwt, set, cookie: { auth }, params }: ElysiaTimeRecordContext & { body: TimeRecordBody & { document_id: string } }) => {
+    .post("/clock-out", async ({ body, jwt, set, cookie: { auth } }: ElysiaClockOutContext) => {
         try {
+            // Verify JWT and get user_id
             const jwtPayload = await jwt.verify(auth.value);
             if (!jwtPayload) {
                 set.status = 401;
@@ -221,135 +124,161 @@ export const timeRecordController = new Elysia({ prefix: "/time-record" })
             }
 
             const user_id = jwtPayload.sub;
-            const { img_url, shift_time, document_id } = body;
-            const shift_type = params.shift_type as 'regular' | 'overtime';
+            const { doc_id, shift_time, image_url, lat, lon } = body;
 
-            // Validate shift type
-            if (!['regular', 'overtime'].includes(shift_type)) {
+            // Validate mandatory fields
+            const mandatoryFields = ['doc_id', 'shift_time', 'image_url', 'lat', 'lon'];
+            const missingFields = mandatoryFields.filter(field => !(field in body));
+
+            if (missingFields.length > 0) {
+                set.status = 400;
                 return {
                     status: "error",
-                    message: "Invalid shift type. Must be either 'regular' or 'overtime'",
+                    message: `Missing mandatory fields: ${missingFields.join(', ')}`
                 };
             }
 
-            // Validate required fields
-            if (!img_url || !document_id || !shift_time) {
+            // Validate shift_time format
+            if (!isValidUTCDateTime(shift_time)) {
+                set.status = 400;
                 return {
                     status: "error",
-                    message: "Missing required fields: document_id, img_url, and shift_time are required",
+                    message: "Invalid shift_time format. Expected format: 2024-01-25T08:30:45.123Z"
                 };
             }
 
-            // Get the existing record
+            // Get existing document
             try {
                 const existingDoc = await esClient.get<TimeRecordDoc>({
                     index: ES_IDX_TIME_RECORD,
-                    id: document_id
+                    id: doc_id
                 });
 
                 if (!existingDoc._source) {
+                    set.status = 404;
                     return {
                         status: "error",
-                        message: "Cannot find time record with the provided document ID",
+                        message: "Time record not found"
                     };
                 }
 
-                // Verify record ownership and type
+                // Verify document ownership
                 if (existingDoc._source.user_id !== user_id) {
+                    set.status = 403;
                     return {
                         status: "error",
-                        message: "Document does not belong to this user",
+                        message: "You are not authorized to update this record"
                     };
                 }
 
-                if (existingDoc._source.shift_type !== shift_type) {
+                // Check if already completed
+                if (existingDoc._source.is_complete) {
+                    set.status = 400;
                     return {
                         status: "error",
-                        message: `This is not a ${shift_type} shift record`,
+                        message: "This time record is already completed"
                     };
                 }
 
-                if (existingDoc._source.status === 'complete') {
-                    return {
-                        status: "error",
-                        message: "This shift is already completed",
-                    };
-                }
-
-                // Validate start_time shift_time exists
-                if (!existingDoc._source.shifts[0]?.start_time?.shift_time) {
-                    return {
-                        status: "error",
-                        message: "`shift_time` is missing from `start_time` in the record",
-                    };
-                }
-
-                // Validate end_time is after start_time
-                const startTime = new Date(existingDoc._source.shifts[0].start_time.shift_time);
+                // Validate end time is after start time
+                const startTime = new Date(existingDoc._source.start_time.shift_time);
                 const endTime = new Date(shift_time);
 
                 if (endTime <= startTime) {
+                    set.status = 400;
                     return {
                         status: "error",
-                        message: `End time (${shift_time}) must be after start time (${existingDoc._source.shifts[0].start_time.shift_time})`,
+                        message: `End time (${endTime.toISOString()}) must be after start time (${startTime.toISOString()})`,
                     };
                 }
 
-                // Prepare update document
-                const now = new Date();
-                const systemTime = now.toISOString();
-                const hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-                
-                const updateDoc = {
-                    shifts: [{
-                        ...existingDoc._source.shifts[0],
-                        end_time: {
-                            system_time: systemTime,
-                            image_url: img_url,
-                            shift_time
-                        }
-                    }],
-                    status: 'complete',
-                    shift_details: {
-                        ...existingDoc._source.shift_details,
-                        hours: parseFloat(hours.toFixed(2))
-                    }
+                // Prepare end time info
+                const currentTime = new Date().toISOString();
+                const currentTimeUTC7 = convertToTimezone(currentTime, 7);
+                const endTimeInfo: TimeInfo = {
+                    shift_time,
+                    timestamp: currentTimeUTC7,
+                    image_url,
+                    lat,
+                    lon
                 };
 
-                // Update the document
+                // Prepare start time info
+                const startTimeDocInfo = await esClient.get<TimeRecordDoc>({
+                    index: ES_IDX_TIME_RECORD,
+                    id: doc_id,
+                    _source_includes: ['reason', 'start_time']  // Only fetch the fields we need
+                });
+
+                const startTimeInfo: TimeInfo = {
+                    shift_time: startTimeDocInfo._source?.start_time?.shift_time ?? "",
+                    timestamp: startTimeDocInfo._source?.start_time?.timestamp ?? "",
+                    image_url: startTimeDocInfo._source?.start_time?.image_url ?? "",
+                    lat: startTimeDocInfo._source?.start_time?.lat ?? 0,
+                    lon: startTimeDocInfo._source?.start_time?.lon ?? 0
+                };
+
+                // Create change log entry
+                const changeLogEntry = createChangeLogJSON({
+                    isSystem: true,
+                    edit_reason: "[SYSTEM] regular clock-out",
+                    lat: lat,
+                    lon: lon,
+                    startTimeInfo: startTimeInfo,
+                    endTimeInfo: endTimeInfo,
+                    shift_reason: startTimeDocInfo._source?.reason || ""
+                });
+
+                // Update document
                 await esClient.update({
                     index: ES_IDX_TIME_RECORD,
-                    id: document_id,
-                    doc: updateDoc,
+                    id: doc_id,
+                    doc: {
+                        end_time: endTimeInfo,
+                        is_complete: true,
+                        change_log: [...existingDoc._source.change_log, changeLogEntry]
+                    }
                 });
 
                 return {
-                    status: "ok",
+                    status: "success",
                     data: {
-                        document_id,
-                    },
+                        doc_id
+                    }
                 };
 
-            } catch (error: any) {
-                if (error.statusCode === 404) {
-                    return {
-                        status: "error",
-                        message: "Cannot find time record with the provided document ID",
-                    };
+            } catch (error: unknown) {
+                if (error && typeof error === 'object' && 'statusCode' in error) {
+                    if ((error as { statusCode: number }).statusCode === 404) {
+                        set.status = 404;
+                        return {
+                            status: "error",
+                            message: "Time record not found"
+                        };
+                    }
                 }
                 throw error;
             }
 
-        } catch (error) {
+        } catch (error: unknown) {
+            // Type guard for objects with status property
+            if (error && typeof error === 'object' && 'status' in error) {
+                set.status = (error as { status: number }).status;
+            } else {
+                set.status = 500;
+            }
+            
             return {
                 status: "error",
-                message: error instanceof Error ? error.message : "Unknown error occurred",
+                message: error instanceof Error ? error.message : "Unknown error occurred"
             };
         }
     })
-    .put("/edit", async ({ body, jwt, set, cookie: { auth } }: ElysiaEditTimeRecordContext) => {
+    .put("/edit", async ({ body, jwt, set, cookie: { auth } }: ElysiaEditContext) => {
+        console.log("put api hit")
         try {
-            // Verify JWT token
+            console.log("put api hit try block")
+            // Verify JWT and get user_id
             const jwtPayload = await jwt.verify(auth.value);
             if (!jwtPayload) {
                 set.status = 401;
@@ -357,205 +286,213 @@ export const timeRecordController = new Elysia({ prefix: "/time-record" })
             }
 
             const user_id = jwtPayload.sub;
-            const { document_id, img_url_start, img_url_end, shift_start_time, shift_end_time, reason } = body;
+            const { 
+                document_id, 
+                edit_reason, 
+                lat, 
+                lon,
+                shift_reason,
+                image_url_start,
+                image_url_end,
+                shift_start_time,
+                shift_end_time 
+            } = body;
 
-            // Validate document_id is provided
-            if (!document_id) {
+            // Validate mandatory fields
+            const mandatoryFields = ['document_id', 'edit_reason', 'lat', 'lon'];
+            const missingFields = mandatoryFields.filter(field => !(field in body));
+
+            if (missingFields.length > 0) {
+                set.status = 400;
                 return {
                     status: "error",
-                    message: "document_id is required"
+                    message: `Missing mandatory fields: ${missingFields.join(', ')}`
                 };
             }
 
-            // Check if any fields to update are provided
-            if (!img_url_start && !img_url_end && !shift_start_time && !shift_end_time && !reason) {
+            // Validate datetime formats if provided
+            if (shift_start_time && !isValidUTCDateTime(shift_start_time)) {
+                set.status = 400;
                 return {
                     status: "error",
-                    message: "No fields to update provided"
+                    message: "Invalid shift_start_time format. Expected format: 2024-01-25T08:30:45.123Z"
                 };
             }
 
-            // Get the existing record
-            try {
-                const existingDoc = await esClient.get<TimeRecordDoc>({
-                    index: ES_IDX_TIME_RECORD,
-                    id: document_id
-                });
-
-                if (!existingDoc._source) {
-                    return {
-                        status: "error",
-                        message: "Cannot find time record with the provided document ID"
-                    };
-                }
-
-                // Verify record ownership
-                if (existingDoc._source.user_id !== user_id) {
-                    return {
-                        status: "error",
-                        message: "Document does not belong to this user"
-                    };
-                }
-
-                const currentShift = existingDoc._source.shifts[0];
-                if (!currentShift) {
-                    return {
-                        status: "error",
-                        message: "Invalid shift data in record"
-                    };
-                }
-
-                // Prepare update document with type assertion
-                const updateDoc: { shifts: ShiftRecord[] } & Partial<TimeRecordDoc> = {
-                    shifts: [{ ...currentShift }]
-                };
-
-                let warnings: string[] = [];
-                let hours = existingDoc._source.shift_details?.hours || 0;
-
-                // Handle time updates
-                if (shift_start_time) {
-                    if (!currentShift.start_time) {
-                        return {
-                            status: "error",
-                            message: "Cannot update start time: No start time record exists"
-                        };
-                    }
-
-                    updateDoc.shifts[0].start_time = {
-                        ...currentShift.start_time,
-                        shift_time: shift_start_time
-                    };
-
-                    // If end time is being updated too, use that for validation
-                    // Otherwise use existing end time if it exists
-                    if (shift_end_time) {
-                        const startTime = new Date(shift_start_time);
-                        const endTime = new Date(shift_end_time);
-                        
-                        if (endTime <= startTime) {
-                            return {
-                                status: "error",
-                                message: `End time (${shift_end_time}) must be after start time (${shift_start_time})`
-                            };
-                        }
-                        
-                        hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-                    } else if (currentShift.end_time) {
-                        const startTime = new Date(shift_start_time);
-                        const endTime = new Date(currentShift.end_time.shift_time);
-                        
-                        if (endTime <= startTime) {
-                            return {
-                                status: "error",
-                                message: `End time (${currentShift.end_time.shift_time}) must be after start time (${shift_start_time})`
-                            };
-                        }
-                        
-                        hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-                    } else {
-                        warnings.push("Shift is not clocked out yet");
-                    }
-                }
-
-                // Handle end time updates
-                if (shift_end_time) {
-                    if (!currentShift.end_time) {
-                        return {
-                            status: "error",
-                            message: "Cannot update end time: No end time record exists"
-                        };
-                    }
-
-                    updateDoc.shifts[0].end_time = {
-                        ...currentShift.end_time,
-                        shift_time: shift_end_time
-                    };
-
-                    // If start time wasn't provided in request, validate against existing start time
-                    if (!shift_start_time) {
-                        const startTime = new Date(currentShift.start_time.shift_time);
-                        const endTime = new Date(shift_end_time);
-                        
-                        if (endTime <= startTime) {
-                            return {
-                                status: "error",
-                                message: `End time (${shift_end_time}) must be after start time (${currentShift.start_time.shift_time})`
-                            };
-                        }
-
-                        hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-                    }
-                    // If start time was provided, validation and hours calculation was already done above
-                }
-
-                // Update image URLs if provided
-                if (img_url_start) {
-                    if (!currentShift.start_time) {
-                        return {
-                            status: "error",
-                            message: "Cannot update start image: No start time record exists"
-                        };
-                    }
-                    updateDoc.shifts[0].start_time.image_url = img_url_start;
-                }
-
-                if (img_url_end) {
-                    if (!currentShift.end_time) {
-                        return {
-                            status: "error",
-                            message: "Cannot update end image: No end time record exists"
-                        };
-                    }
-                    updateDoc.shifts[0].end_time = {
-                        ...currentShift.end_time,
-                        image_url: img_url_end
-                    };
-                }
-
-                // Update reason if provided
-                if (reason) {
-                    updateDoc.shift_details = {
-                        ...existingDoc._source.shift_details,
-                        reason
-                    };
-                }
-
-                // Update hours if changed
-                if (hours !== existingDoc._source.shift_details?.hours) {
-                    updateDoc.shift_details = {
-                        ...updateDoc.shift_details,
-                        ...existingDoc._source.shift_details,
-                        hours: parseFloat(hours.toFixed(2))
-                    };
-                }
-
-                // Update the document
-                await esClient.update({
-                    index: ES_IDX_TIME_RECORD,
-                    id: document_id,
-                    doc: updateDoc
-                });
-
+            if (shift_end_time && !isValidUTCDateTime(shift_end_time)) {
+                set.status = 400;
                 return {
-                    status: "ok",
-                    data: {
-                        document_id
-                    },
-                    ...(warnings.length > 0 && { warnings })
+                    status: "error",
+                    message: "Invalid shift_end_time format. Expected format: 2024-01-25T08:30:45.123Z"
                 };
-
-            } catch (error: any) {
-                if (error.statusCode === 404) {
-                    return {
-                        status: "error",
-                        message: "Cannot find time record with the provided document ID"
-                    };
-                }
-                throw error;
             }
 
-        } catch (error) {
+            // Get existing document
+            const existingDoc = await esClient.get<TimeRecordDoc>({
+                index: ES_IDX_TIME_RECORD,
+                id: document_id
+            });
+
+            if (!existingDoc._source) {
+                set.status = 404;
+                return {
+                    status: "error",
+                    message: "Time record not found"
+                };
+            }
+
+            // Verify document ownership
+            if (existingDoc._source.user_id !== user_id) {
+                set.status = 403;
+                return {
+                    status: "error",
+                    message: "You are not authorized to edit this record"
+                };
+            }
+
+            // Check existence of fields that need to be edited
+            if (shift_start_time || image_url_start) {
+                if (!existingDoc._source.start_time) {
+                    set.status = 400;
+                    return {
+                        status: "error",
+                        message: "Cannot edit start time: No start time record exists"
+                    };
+                }
+            }
+
+            if (shift_end_time || image_url_end) {
+                if (!existingDoc._source.end_time) {
+                    set.status = 400;
+                    return {
+                        status: "error",
+                        message: "Cannot edit end time: No end time record exists"
+                    };
+                }
+            }
+
+            if (shift_reason) {
+                if (!existingDoc._source.reason) {
+                    set.status = 400;
+                    return {
+                        status: "error",
+                        message: "Cannot edit shift reason: No 'reason' record exists"
+                    };
+                }
+            }
+
+            // Time sequence validation
+            if (shift_start_time && shift_end_time) {
+                // If both times are provided in request, validate them against each other
+                const startTime = new Date(shift_start_time);
+                const endTime = new Date(shift_end_time);
+
+                if (endTime <= startTime) {
+                    set.status = 400;
+                    return {
+                        status: "error",
+                        message: `End time (${endTime.toISOString()}) must be after start time (${startTime.toISOString()})`,
+                    };
+                }
+            } else if (shift_start_time) {
+                // If only start time is provided, check against existing end time
+                if (existingDoc._source.end_time) {
+                    const newStartTime = new Date(shift_start_time);
+                    const existingEndTime = new Date(existingDoc._source.end_time.shift_time);
+                    
+                    if (existingEndTime <= newStartTime) {
+                        set.status = 400;
+                        return {
+                            status: "error",
+                            message: `New start time (${newStartTime.toISOString()}) must be before existing end time (${existingEndTime.toISOString()})`
+                        };
+                    }
+                }
+            } else if (shift_end_time) {
+                // If only end time is provided, check against existing start time
+                if (!existingDoc._source.start_time) {
+                    set.status = 400;
+                    return {
+                        status: "error",
+                        message: "Cannot update end time: Start time record must exist first"
+                    };
+                }
+
+                const existingStartTime = new Date(existingDoc._source.start_time.shift_time);
+                const newEndTime = new Date(shift_end_time);
+                
+                if (newEndTime <= existingStartTime) {
+                    set.status = 400;
+                    return {
+                        status: "error",
+                        message: `New end time (${newEndTime.toISOString()}) must be after existing start time (${existingStartTime.toISOString()})`
+                    };
+                }
+            }
+
+            // Prepare update document
+            const updateDoc: Partial<TimeRecordDoc> = {};
+
+            // Update start time if needed
+            if (shift_start_time || image_url_start) {
+                const startTimeInfo: TimeInfo = {
+                    ...existingDoc._source.start_time,
+                    ...(shift_start_time && { shift_time: shift_start_time }),
+                    ...(image_url_start && { image_url: image_url_start })
+                };
+                updateDoc.start_time = startTimeInfo;
+            }
+
+            // Update end time if needed
+            if (shift_end_time || image_url_end) {
+                const endTimeInfo: TimeInfo = {
+                    ...existingDoc._source.end_time!,
+                    ...(shift_end_time && { shift_time: shift_end_time }),
+                    ...(image_url_end && { image_url: image_url_end })
+                };
+                updateDoc.end_time = endTimeInfo;
+            }
+
+            // Update reason if provided
+            if (shift_reason !== undefined) {
+                updateDoc.reason = shift_reason;
+            }
+
+            // Create change log entry
+            const changeLogEntry = createChangeLogJSON({
+                isSystem: false,
+                edit_reason: edit_reason,
+                lat: lat,
+                lon: lon,
+                startTimeInfo: updateDoc.start_time || existingDoc._source.start_time,
+                endTimeInfo: updateDoc.end_time || existingDoc._source.end_time || null,
+                shift_reason: updateDoc.reason || existingDoc._source.reason
+            });
+
+            // Update the document
+            await esClient.update({
+                index: ES_IDX_TIME_RECORD,
+                id: document_id,
+                doc: {
+                    ...updateDoc,
+                    change_log: [...existingDoc._source.change_log, changeLogEntry]
+                }
+            });
+
+            return {
+                status: "success",
+                data: {
+                    document_id
+                }
+            };
+
+        } catch (error: unknown) {
+            if (error && typeof error === 'object' && 'status' in error) {
+                set.status = (error as { status: number }).status;
+            } else {
+                set.status = 500;
+            }
+            
             return {
                 status: "error",
                 message: error instanceof Error ? error.message : "Unknown error occurred"

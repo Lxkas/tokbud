@@ -1,7 +1,7 @@
 import { Elysia } from "elysia";
 import { distanceController } from "./controllers/distance";
 import { webhookController } from "./controllers/webhook";
-import { timeRecordController2 } from "./controllers/time-record2";
+import { timeRecordController2 } from "./controllers/time-record";
 import { jwtMiddleware } from "@/middleware";
 import { workingHoursController } from "./controllers/working-hours";
 
