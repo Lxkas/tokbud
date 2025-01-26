@@ -11,7 +11,7 @@ interface ChangeLogParams {
     lat: number;
     lon: number;
     startTimeInfo: TimeInfo;
-    endTimeInfo?: TimeInfo;
+    endTimeInfo?: TimeInfo | null;
     shift_reason: string;
 }
 
@@ -24,9 +24,12 @@ export function createChangeLogJSON({
     endTimeInfo,
     shift_reason
 }: ChangeLogParams): string {
+    const currentTime = new Date().toISOString();
+    const currentTimeUTC7 = convertToTimezone(currentTime, 7);
+
     const changeLog = {
         is_system: isSystem.toString(),
-        timestamp: new Date().toISOString(),
+        timestamp: currentTimeUTC7,
         edit_reason: edit_reason || "",
         lat: lat,
         lon: lon,

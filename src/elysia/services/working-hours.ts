@@ -139,7 +139,7 @@ export async function getWorkingHours(
                 source.start_time?.shift_time,
                 source.end_time?.shift_time
             );
-            console.log(source.change_log)
+            // console.log(source.change_log)
             const shiftData: WorkingHourShift = {
                 doc_id: hit._id as string,
                 shift_type: source.shift_type,
