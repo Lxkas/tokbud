@@ -40,7 +40,7 @@ export const uploadController = new Elysia({ prefix: "/upload" }).use(jwtMiddlew
 				{ expiresIn: 300 },
 			);
 
-			return signedUrl;
+			return { signedUrl: signedUrl };
 		} catch (err) {
 			return error(500, err);
 		}
