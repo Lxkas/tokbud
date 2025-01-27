@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.735.0",
+    "@aws-sdk/s3-request-presigner": "^3.735.0",
     "@clerk/nextjs": "^6.9.11",
     "@elastic/elasticsearch": "^8.17.0",
     "@elysiajs/eden": "^1.2.0",
@@ -24,6 +26,7 @@
     "@radix-ui/react-slot": "^1.1.1",
     "@radix-ui/react-tabs": "^1.1.2",
     "@radix-ui/react-tooltip": "^1.1.7",
+    "bun": "^1.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
