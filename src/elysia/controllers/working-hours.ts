@@ -16,9 +16,26 @@ export const workingHoursController = new Elysia()
                 throw new Error("Unauthorized");
             }
 
-            const { user_id, org_id, start_date, end_date } = query;
+            const { 
+                user_id, 
+                org_id, 
+                start_date, 
+                end_date, 
+                sort_dates_ascending, 
+                sort_shifts_ascending 
+            } = query;
+            
             const user_id_jwt = jwtPayload.sub;
             const org_id_jwt = jwtPayload.org_id;
+
+            // Convert string query parameters to boolean
+            const parseSortParam = (param: string | undefined): boolean | undefined => {
+                if (param === undefined) return undefined;
+                return param.toLowerCase() === 'true';
+            };
+
+            const sortDatesAsc = parseSortParam(sort_dates_ascending);
+            const sortShiftsAsc = parseSortParam(sort_shifts_ascending);
 
             // Determine request context and apply appropriate authorization
             let effectiveUserId = user_id;
@@ -72,7 +89,9 @@ export const workingHoursController = new Elysia()
                 user_id: effectiveUserId,
                 org_id: effectiveOrgId,
                 start_date,
-                end_date
+                end_date,
+                sort_dates_ascending: sortDatesAsc,
+                sort_shifts_ascending: sortShiftsAsc
             });
 
             return workingHours;

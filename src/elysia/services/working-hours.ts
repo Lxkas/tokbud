@@ -75,9 +75,18 @@ export async function getWorkingHours(
         org_id?: string;
         start_date?: string;
         end_date?: string;
+        sort_dates_ascending?: boolean; // Default false for latest dates first
+        sort_shifts_ascending?: boolean; // Default false for latest shifts first
     }
 ): Promise<WorkingHourResponse> {
-    const { user_id, org_id, start_date, end_date } = params;
+    const { 
+        user_id, 
+        org_id, 
+        start_date, 
+        end_date,
+        sort_dates_ascending = false,
+        sort_shifts_ascending = false 
+    } = params;
 
     // Validate that at least one of user_id or org_id is provided
     if (!user_id && !org_id) {
@@ -108,10 +117,10 @@ export async function getWorkingHours(
                 }
             },
             sort: [
-                { date: "asc" },
-                { "start_time.timestamp": { order: "asc" } }
+                { date: sort_dates_ascending ? "asc" : "desc" },
+                { "start_time.shift_time": { order: sort_shifts_ascending ? "asc" : "desc" } }
             ],
-            size: 10000 // Adjust based on your needs
+            size: 10000
         });
 
         // Group results by user_id and date
@@ -156,15 +165,31 @@ export async function getWorkingHours(
             return acc;
         }, {});
 
-        // Format the response
-        const formattedData = Object.entries(groupedData).map(([userId, dateShifts]) => ({
-            user_id: userId,
-            org_id: result.hits.hits.find(hit => hit._source?.user_id === userId)?._source?.org_id || '',
-            all_shift: Object.entries(dateShifts).map(([date, shifts]) => ({
-                date,
-                shift: shifts
-            }))
-        }));
+        // Format the response with proper sorting
+        const formattedData = Object.entries(groupedData).map(([userId, dateShifts]) => {
+            // Sort the all_shift array based on dates
+            const sortedShifts = Object.entries(dateShifts)
+                .map(([date, shifts]) => ({
+                    date,
+                    // Sort the shifts within each date based on shift_time
+                    shift: shifts.sort((a, b) => {
+                        const timeA = new Date(a.start_time.shift_time).getTime();
+                        const timeB = new Date(b.start_time.shift_time).getTime();
+                        return sort_shifts_ascending ? timeA - timeB : timeB - timeA;
+                    })
+                }))
+                .sort((a, b) => {
+                    const dateA = new Date(a.date).getTime();
+                    const dateB = new Date(b.date).getTime();
+                    return sort_dates_ascending ? dateA - dateB : dateB - dateA;
+                });
+
+            return {
+                user_id: userId,
+                org_id: result.hits.hits.find(hit => hit._source?.user_id === userId)?._source?.org_id || '',
+                all_shift: sortedShifts
+            };
+        });
 
         return {
             status: "ok",

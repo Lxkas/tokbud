@@ -65,6 +65,8 @@ export interface WorkingHoursQuery {
     org_id?: string;
     start_date?: string;
     end_date?: string;
+    sort_dates_ascending?: string;
+    sort_shifts_ascending?: string;
 }
 
 export interface JWTPayload {
