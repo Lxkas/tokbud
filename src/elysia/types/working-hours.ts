@@ -1,10 +1,10 @@
 // For service
 export interface TimeDetails {
-    shift_time: string;
-    timestamp: string;
-    image_url: string;
-    lat: number;
-    lon: number;
+    shift_time?: string;
+    timestamp?: string;
+    image_url?: string;
+    lat?: number;
+    lon?: number;
 }
 
 export interface ChangeLogEntry {
@@ -14,9 +14,9 @@ export interface ChangeLogEntry {
     lat: number;
     lon: number;
     data: {
-        shift_reason: string;
-        start_time: TimeDetails;
-        end_time: TimeDetails | null;
+        shift_reason?: string;
+        start_time?: TimeDetails;
+        end_time?: TimeDetails | null;
     };
 }
 
@@ -58,6 +58,28 @@ export interface WorkingHourResponse {
         all_shift: WorkingHoursByDate[];
     }[];
 }
+
+export interface ExportedWorkingHourResponse {
+    status: string;
+    data: ExportedUserWorkingHour[];
+}
+
+export interface ExportedUserWorkingHour {
+    user_id: string;
+    org_id: string;
+    all_shift: ExportedDayShift[];
+}
+
+export interface ExportedDayShift {
+    date: string;
+    shifts: ExportedShift[];
+}
+
+export interface ExportedShift {
+    doc_id: string;
+    change_history: string[];
+}
+
 
 // For controller
 export interface WorkingHoursQuery {

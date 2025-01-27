@@ -76,3 +76,22 @@ export function isValidDateFormat(date: string): boolean {
     
     return true;
 }
+
+export function formatDateTime(isoString: string): string {
+    if (!isoString) return '(no time)';
+    
+    try {
+        const date = new Date(isoString);
+        if (isNaN(date.getTime())) return '(invalid time)';
+        
+        const day = date.getUTCDate().toString().padStart(2, '0');
+        const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+        const year = date.getUTCFullYear();
+        const hours = date.getUTCHours().toString().padStart(2, '0');
+        const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+        
+        return `${day}/${month}/${year} ${hours}:${minutes}`;
+    } catch {
+        return '(invalid time)';
+    }
+}

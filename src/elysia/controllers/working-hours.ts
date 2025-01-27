@@ -1,6 +1,6 @@
 import Elysia from "elysia";
 import { getUserOrganization } from "@/elysia/services/clerk";
-import { getWorkingHours } from "@/elysia/services/working-hours";
+import { getWorkingHours, getWorkingHoursExporter } from "@/elysia/services/working-hours";
 import { jwtMiddleware } from "@/middleware";
 import { ElysiaWorkingHoursContext } from "@/elysia/types/working-hours";
 import { isValidDateFormat } from "@/elysia/utils/helpers"
@@ -93,6 +93,17 @@ export const workingHoursController = new Elysia()
                 sort_dates_ascending: sortDatesAsc,
                 sort_shifts_ascending: sortShiftsAsc
             });
+            
+            const exporter = await getWorkingHoursExporter({
+                user_id: effectiveUserId,
+                org_id: effectiveOrgId,
+                start_date,
+                end_date,
+                sort_dates_ascending: sortDatesAsc,
+                sort_shifts_ascending: sortShiftsAsc
+            });
+
+            console.log(JSON.stringify(exporter, null, 2));
 
             return workingHours;
 
