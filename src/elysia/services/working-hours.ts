@@ -180,64 +180,54 @@ export async function getWorkingHours(
 function generateChangeDescription(currentLog: ChangeLogEntry, previousLog: ChangeLogEntry): string[] {
     const changes: string[] = [];
     const timestamp = formatDateTime(currentLog.timestamp);
-    const editReason = currentLog.edit_reason;
+    const prefix = `[${currentLog.edit_reason} @ ${timestamp}] `;
     
-    // Add edit reason as a prefix if available
-    const prefix = editReason ? `[${editReason} @ ${timestamp}] ` : '';
-    
-    // Check for shift reason change
-    const prevReason = previousLog.data.shift_reason;
-    const currentReason = currentLog.data.shift_reason;
-    if (prevReason !== undefined && currentReason !== undefined && prevReason !== currentReason) {
+    // Compare shift reason
+    if (currentLog.data.shift_reason !== previousLog.data.shift_reason) {
         changes.push(
-            `${prefix}Shift reason was updated from '${prevReason}' to '${currentReason}'`
+            `${prefix}Shift reason was updated from '${previousLog.data.shift_reason}' to '${currentLog.data.shift_reason}'`
         );
     }
     
-    // Check for start time changes
-    const prevStartTime = previousLog.data.start_time!.shift_time;
-    const currentStartTime = currentLog.data.start_time!.shift_time;
-    if (prevStartTime !== undefined && currentStartTime !== undefined && prevStartTime !== currentStartTime) {
+    // Compare start time
+    if (currentLog.data.start_time?.shift_time !== previousLog.data.start_time?.shift_time) {
         changes.push(
-            `${prefix}Shift start time was updated from ${formatDateTime(prevStartTime)} to ${formatDateTime(currentStartTime)}`
+            `${prefix}Shift start time was updated from ${formatDateTime(previousLog.data.start_time?.shift_time!)} to ${formatDateTime(currentLog.data.start_time?.shift_time!)}`
         );
     }
     
-    // Check for end time changes
-    const prevEndTime = previousLog.data.end_time?.shift_time;
-    const currentEndTime = currentLog.data.end_time?.shift_time;
-    
-    // Handle all possible end time scenarios
-    if (previousLog.data.end_time && currentLog.data.end_time) {
-        // both records have end_time object, check for updates
-        if (!prevEndTime && currentEndTime) {
-            // Subcase a: shift_time was empty and now has value
-            changes.push(
-                `${prefix}Shift end time was updated to ${formatDateTime(currentEndTime)} (updated at ${timestamp})`
-            );
-        } else if (prevEndTime && currentEndTime && prevEndTime !== currentEndTime) {
-            // Subcase b: shift_time was updated from one value to another
-            changes.push(
-                `${prefix}Shift end time was updated from ${formatDateTime(prevEndTime)} to ${formatDateTime(currentEndTime)}`
-            );
-        }
-    }
-    
-    // Check for start time image URL changes
-    const prevStartImage = previousLog.data.start_time?.image_url;
-    const currentStartImage = currentLog.data.start_time?.image_url;
-    if (prevStartImage !== undefined && currentStartImage !== undefined && prevStartImage !== currentStartImage) {
+    // Compare start timestamp
+    if (currentLog.data.start_time?.timestamp !== previousLog.data.start_time?.timestamp) {
         changes.push(
-            `${prefix}Clock-in image was updated from "${prevStartImage}" to "${currentStartImage}"`
+            `${prefix}Clock-in time was updated from ${formatDateTime(previousLog.data.start_time?.timestamp!)} to ${formatDateTime(currentLog.data.start_time?.timestamp!)}`
         );
     }
     
-    // Check for end time image URL changes
-    const prevEndImage = previousLog.data.end_time?.image_url;
-    const currentEndImage = currentLog.data.end_time?.image_url;
-    if (prevEndImage !== undefined && currentEndImage !== undefined && prevEndImage !== currentEndImage) {
+    // Compare end time
+    if (currentLog.data.end_time?.shift_time !== previousLog.data.end_time?.shift_time) {
         changes.push(
-            `${prefix}Clock-out image was updated from "${prevEndImage}" to "${currentEndImage}"`
+            `${prefix}Shift end time was updated from ${formatDateTime(previousLog.data.end_time?.shift_time!)} to ${formatDateTime(currentLog.data.end_time?.shift_time!)}`
+        );
+    }
+    
+    // Compare end timestamp
+    if (currentLog.data.end_time?.timestamp !== previousLog.data.end_time?.timestamp) {
+        changes.push(
+            `${prefix}Clock-out time was updated from ${formatDateTime(previousLog.data.end_time?.timestamp!)} to ${formatDateTime(currentLog.data.end_time?.timestamp!)}`
+        );
+    }
+    
+    // Compare start image
+    if (currentLog.data.start_time!.image_url !== previousLog.data.start_time!.image_url) {
+        changes.push(
+            `${prefix}Clock-in image was updated`
+        );
+    }
+    
+    // Compare end image
+    if (currentLog.data.end_time?.image_url !== previousLog.data.end_time?.image_url) {
+        changes.push(
+            `${prefix}Clock-out image was updated`
         );
     }
     
@@ -286,11 +276,17 @@ export async function getWorkingHoursExporter(
 
                     // Process complete shift
                     const changeHistory: string[] = [];
+                    var changes = [];
                     
                     shiftDetail.change_log!.forEach((log, index) => {
                         if (!log.is_system && index > 0) {
                             const previousLog = shiftDetail.change_log![index - 1];
-                            const changes = generateChangeDescription(log, previousLog);
+                            changes = generateChangeDescription(log, previousLog);
+                            console.log(log)
+                            console.log(previousLog)
+                            console.log("_______")
+                            console.log(changes)
+                            console.log("========")
                             changeHistory.push(...changes);
                         }
                     });
