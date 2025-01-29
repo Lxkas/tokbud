@@ -1,13 +1,15 @@
 import { esClient } from "@/elysia/utils/es";
 import { ES_IDX_TIME_RECORD } from "@/elysia/utils/const";
-import { formatDateTime } from "@/elysia/utils/helpers"
+import { formatDateTime, formatTime, calculateDuration } from "@/elysia/utils/helpers"
 import { 
     ChangeLogEntry,
     WorkingHour,
     WorkingHourResponse,
     WorkingHourShift,
     ExportedWorkingHourResponse,
-    ExportedUserWorkingHour
+    ExportedUserWorkingHour,
+    ExportedShiftDetail,
+    ExportedIncompleteShift
 } from "@/elysia/types/working-hours";
 
 // Helper function to safely parse JSON array
@@ -40,37 +42,7 @@ function parseChangeLogArray(jsonArray: string[] | undefined): ChangeLogEntry[] 
     }
 }
 
-// Helper function to calculate hours between two timestamps
-function calculateDuration(startTime: string | undefined, endTime: string | undefined): string | null {
-    if (!startTime || !endTime) return null;
-    
-    try {
-        const start = new Date(startTime);
-        const end = new Date(endTime);
-        
-        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-            return null;
-        }
 
-        const diffInMilliseconds = end.getTime() - start.getTime();
-        
-        // Calculate hours, minutes, and seconds
-        const hours = Math.floor(diffInMilliseconds / (1000 * 60 * 60));
-        const minutes = Math.floor((diffInMilliseconds % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diffInMilliseconds % (1000 * 60)) / 1000);
-        
-        // Pad with leading zeros if needed
-        const formattedHours = hours.toString().padStart(2, '0');
-        const formattedMinutes = minutes.toString().padStart(2, '0');
-        const formattedSeconds = seconds.toString().padStart(2, '0');
-        
-        // Return in format HH:MM:SS
-        return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
-    } catch (error) {
-        console.error('Error calculating duration:', error);
-        return null;
-    }
-}
 
 export async function getWorkingHours(
     params: {
@@ -272,6 +244,10 @@ function generateChangeDescription(currentLog: ChangeLogEntry, previousLog: Chan
     return changes;
 }
 
+function isValidDateString(date: string | undefined): date is string {
+    return typeof date === 'string' && date.length > 0;
+}
+
 export async function getWorkingHoursExporter(
     params: {
         user_id?: string;
@@ -282,34 +258,85 @@ export async function getWorkingHoursExporter(
         sort_shifts_ascending?: boolean;
     }
 ): Promise<ExportedWorkingHourResponse> {
-    // Get the original working hours data
     const originalResponse = await getWorkingHours(params);
     
-    // Transform the data
-    const exportedData: ExportedUserWorkingHour[] = originalResponse.data.map(userData => ({
-        user_id: userData.user_id,
-        org_id: userData.org_id,
-        all_shift: userData.all_shift.map(dayShift => ({
-            date: dayShift.date,
-            shifts: dayShift.shift.map(shiftDetail => {
-                const changeHistory: string[] = [];
+    const exportedData: ExportedUserWorkingHour[] = originalResponse.data.map((userData) => {
+        return {
+            user_id: userData.user_id,
+            org_id: userData.org_id,
+            all_shift: userData.all_shift.map((dayShift) => {
+                const shiftsByType: { [key: string]: (ExportedShiftDetail | ExportedIncompleteShift)[] } = {};
                 
-                // Process each non-system change
-                shiftDetail.change_log!.forEach((log, index) => {
-                    if (!log.is_system && index > 0) {
-                        const previousLog = shiftDetail.change_log![index - 1];
-                        const changes = generateChangeDescription(log, previousLog);
-                        changeHistory.push(...changes);
+                dayShift.shift.forEach((shiftDetail) => {
+                    // Check if shift is complete
+                    if (!shiftDetail.is_complete) {
+                        // Handle incomplete shift
+                        const incompleteShift: ExportedIncompleteShift = {
+                            doc_id: shiftDetail.doc_id,
+                            message: "This shift is incomplete and cannot be calculated for summary"
+                        };
+
+                        // Initialize array for this shift type if it doesn't exist
+                        if (!shiftsByType[shiftDetail.shift_type]) {
+                            shiftsByType[shiftDetail.shift_type] = [];
+                        }
+                        shiftsByType[shiftDetail.shift_type].push(incompleteShift);
+                        return; // Skip the rest of the processing for this shift
                     }
+
+                    // Process complete shift
+                    const changeHistory: string[] = [];
+                    
+                    shiftDetail.change_log!.forEach((log, index) => {
+                        if (!log.is_system && index > 0) {
+                            const previousLog = shiftDetail.change_log![index - 1];
+                            const changes = generateChangeDescription(log, previousLog);
+                            changeHistory.push(...changes);
+                        }
+                    });
+                    
+                    const start = isValidDateString(shiftDetail.start_time.timestamp) 
+                        ? formatTime(new Date(shiftDetail.start_time.timestamp))
+                        : "00:00";
+
+                    const end = isValidDateString(shiftDetail.end_time!.timestamp)
+                        ? formatTime(new Date(shiftDetail.end_time!.timestamp))
+                        : "00:00";
+                    
+                    const startOfficial = isValidDateString(shiftDetail.start_time.shift_time)
+                        ? formatTime(new Date(shiftDetail.start_time.shift_time))
+                        : "00:00";
+                    
+                    const endOfficial = isValidDateString(shiftDetail.end_time!.shift_time)
+                        ? formatTime(new Date(shiftDetail.end_time!.shift_time))
+                        : "00:00";
+                    
+                    const shiftData: ExportedShiftDetail = {
+                        doc_id: shiftDetail.doc_id,
+                        start,
+                        end,
+                        start_official: startOfficial,
+                        end_official: endOfficial,
+                        duration: calculateDuration(shiftDetail.start_time.timestamp, shiftDetail.end_time!.timestamp) || "00:00",
+                        duration_official: calculateDuration(shiftDetail.start_time.shift_time, shiftDetail.end_time!.shift_time) || "00:00",
+                        reason: shiftDetail.reason || "No reason provided", // Added reason with fallback
+                        change_history: changeHistory
+                    };
+
+                    // Group by shift type
+                    if (!shiftsByType[shiftDetail.shift_type]) {
+                        shiftsByType[shiftDetail.shift_type] = [];
+                    }
+                    shiftsByType[shiftDetail.shift_type].push(shiftData);
                 });
                 
                 return {
-                    doc_id: shiftDetail.doc_id,
-                    change_history: changeHistory
+                    date: dayShift.date,
+                    ...shiftsByType
                 };
             })
-        }))
-    }));
+        };
+    });
     
     return {
         status: originalResponse.status,

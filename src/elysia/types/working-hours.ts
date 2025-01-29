@@ -72,12 +72,26 @@ export interface ExportedUserWorkingHour {
 
 export interface ExportedDayShift {
     date: string;
-    shifts: ExportedShift[];
+    on_site?: (ExportedShiftDetail | ExportedIncompleteShift)[];
+    overtime?: (ExportedShiftDetail | ExportedIncompleteShift)[];
+    // Add other shift types as needed
 }
 
-export interface ExportedShift {
+export interface ExportedShiftDetail {
     doc_id: string;
+    start: string;
+    end: string;
+    start_official: string;
+    end_official: string;
+    duration: string;
+    duration_official: string;
+    reason: string;
     change_history: string[];
+}
+
+export interface ExportedIncompleteShift {
+    doc_id: string;
+    message: string;
 }
 
 

@@ -78,8 +78,10 @@ export interface EditTimeRecordBody {
     shift_reason?: string;
     image_url_start?: string;
     image_url_end?: string;
-    shift_start_time?: string;
-    shift_end_time?: string;
+    official_start_time?: string;
+    official_end_time?: string;
+    start_time?: string;
+    end_time?: string;
 }
 
 export interface ElysiaEditContext {

@@ -95,3 +95,54 @@ export function formatDateTime(isoString: string): string {
         return '(invalid time)';
     }
 }
+
+// Format time to HH:mm
+// export function formatTime(date: Date): string {
+//     return date.toTimeString().slice(0, 5);
+// }
+export function formatTime(date: Date): string {
+    const hours = date.getUTCHours().toString().padStart(2, '0');
+    const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+}
+
+// Create Date object
+export function safeCreateDate(dateStr: string | undefined): Date | null {
+    if (!dateStr) {
+        return null;
+    }
+    const date = new Date(dateStr);
+    return isNaN(date.getTime()) ? null : date;
+}
+
+// ฉalculate hours between two timestamps
+export function calculateDuration(startTime: string | undefined, endTime: string | undefined): string | null {
+    if (!startTime || !endTime) return null;
+    
+    try {
+        const start = new Date(startTime);
+        const end = new Date(endTime);
+        
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+            return null;
+        }
+
+        const diffInMilliseconds = end.getTime() - start.getTime();
+        
+        // Calculate hours, minutes, and seconds
+        const hours = Math.floor(diffInMilliseconds / (1000 * 60 * 60));
+        const minutes = Math.floor((diffInMilliseconds % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diffInMilliseconds % (1000 * 60)) / 1000);
+        
+        // Pad with leading zeros if needed
+        const formattedHours = hours.toString().padStart(2, '0');
+        const formattedMinutes = minutes.toString().padStart(2, '0');
+        const formattedSeconds = seconds.toString().padStart(2, '0');
+        
+        // Return in format HH:MM:SS
+        return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
+    } catch (error) {
+        console.error('Error calculating duration:', error);
+        return null;
+    }
+}
