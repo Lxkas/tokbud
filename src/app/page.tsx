@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useCallback } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Clock, LogIn, LogOut } from "lucide-react";
+import { Clock, LogIn, LogOut, Camera } from "lucide-react";
+import { CameraCapture } from "@/components/camera-capture";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,11 @@ function formatDate(date: Date | undefined, formatString: string) {
 
 export default function TimeTracker() {
 	const [currentTime, setCurrentTime] = useState<Date>();
+
+	// State for camera and photo
+	const [showCamera, setShowCamera] = useState(false);
+	const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+	const [isCapturingPhoto, setIsCapturingPhoto] = useState(false);
 
 	// State for clock in/out status and loading
 	const [isClockedIn, setIsClockedIn] = useState(false);
@@ -109,11 +115,13 @@ export default function TimeTracker() {
 			setShiftType("on-site");
 			setOvertimeReason("");
 			setEvents([]);
+			setIsLoadingShiftData(false);
 			return;
 		}
 
 		// should only be 1 object for this user, pick first
 		const userRecord = allRecords[0];
+
 		if (!userRecord?.all_shift?.length) {
 			// No shifts at all => user clocked out
 			setIsClockedIn(false);
@@ -201,6 +209,12 @@ export default function TimeTracker() {
 	}
 
 	// Handle clock in with optimistic update
+	const handlePhotoCapture = useCallback((imageDataUrl: string) => {
+		setPhotoDataUrl(imageDataUrl);
+		setShowCamera(false);
+		setIsCapturingPhoto(false);
+	}, []);
+
 	const handleClockIn = async () => {
 		if (!isSignedIn) {
 			alert("Please sign in to clock in.");
@@ -214,6 +228,12 @@ export default function TimeTracker() {
 
 		if (shiftType === "overtime" && !overtimeReason.trim()) {
 			alert("Please provide a reason for overtime.");
+			return;
+		}
+
+		if (!photoDataUrl) {
+			setIsCapturingPhoto(true);
+			setShowCamera(true);
 			return;
 		}
 
@@ -243,7 +263,7 @@ export default function TimeTracker() {
 				shift_type: shiftType,
 				reason: shiftType === "overtime" ? overtimeReason : undefined,
 				shift_time: new Date().toISOString(),
-				image_url: "https://placehold.co/200x200?text=ClockIn",
+				image_url: "urmum",
 				lat: 13.8445,
 				lon: 100.5802,
 			};
@@ -282,6 +302,12 @@ export default function TimeTracker() {
 			return;
 		}
 
+		if (!photoDataUrl) {
+			setIsCapturingPhoto(true);
+			setShowCamera(true);
+			return;
+		}
+
 		// Start loading state
 		startTransition(() => {
 			// Optimistically update UI
@@ -307,7 +333,7 @@ export default function TimeTracker() {
 			const payload = {
 				doc_id: docId,
 				shift_time: new Date().toISOString(),
-				image_url: "https://placehold.co/200x200?text=ClockOut",
+				image_url: photoDataUrl,
 				lat: 13.8445,
 				lon: 100.5802,
 			};
@@ -342,6 +368,26 @@ export default function TimeTracker() {
 			await handleClockIn();
 		}
 	};
+
+	// Reset photo when clock action completes
+	useEffect(() => {
+		if (!isPending) {
+			setPhotoDataUrl(null);
+		}
+	}, [isPending]);
+
+	if (showCamera) {
+		return (
+			<CameraCapture
+				onCapture={handlePhotoCapture}
+				onClose={() => {
+					setShowCamera(false);
+					setIsCapturingPhoto(false);
+					setPhotoDataUrl(null);
+				}}
+			/>
+		);
+	}
 
 	return (
 		<Card className="w-full max-w-md mx-auto">
@@ -402,11 +448,24 @@ export default function TimeTracker() {
 					</div>
 				</div>
 
+				{/* Photo Preview */}
+				{photoDataUrl && (
+					<div className="mb-4">
+						<img src={photoDataUrl} alt="Captured selfie" className="w-full h-48 object-cover rounded-lg" />
+					</div>
+				)}
+
 				{/* Clock-in/out Button */}
 				<Button
 					onClick={handleClockInOut}
 					className="w-full"
-					disabled={!isSignedIn || (!isClockedIn && !shiftType) || isPending || isLoadingShiftData}
+					disabled={
+						!isSignedIn ||
+						(!isClockedIn && !shiftType) ||
+						isPending ||
+						isLoadingShiftData ||
+						isCapturingPhoto
+					}
 				>
 					{isLoading ? (
 						"Loading..."
@@ -416,6 +475,11 @@ export default function TimeTracker() {
 						) : (
 							"Clocking in..."
 						)
+					) : isCapturingPhoto ? (
+						<>
+							<Camera className="w-4 h-4 mr-2" />
+							Take Selfie
+						</>
 					) : isClockedIn ? (
 						<>
 							<LogOut className="w-4 h-4 mr-2" />
