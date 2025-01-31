@@ -53,13 +53,13 @@ export const timeRecordController2 = new Elysia({ prefix: "/time-record-2" })
 
             const org_id = clerkResponse[0].organization.id;
             const currentTime = new Date().toISOString();
-            const currentTimeUTC7 = convertToTimezone(currentTime, 7);
-            const recordDate = shift_time.split('T')[0];
+            // const currentTimeUTC7 = convertToTimezone(currentTime, 7);
+            const recordDateUTC7 = convertToTimezone(shift_time, 7).split('T')[0];
 
             // Prepare time info
             const startTimeInfo: TimeInfo = {
                 shift_time,
-                timestamp: currentTimeUTC7,
+                timestamp: currentTime,
                 image_url,
                 lat,
                 lon
@@ -67,7 +67,7 @@ export const timeRecordController2 = new Elysia({ prefix: "/time-record-2" })
 
             // Create the document
             const timeRecord: TimeRecordDoc = {
-                date: recordDate,
+                date: recordDateUTC7,
                 user_id,
                 org_id,
                 shift_type: shift_type || "",
@@ -194,10 +194,10 @@ export const timeRecordController2 = new Elysia({ prefix: "/time-record-2" })
 
                 // Prepare end time info
                 const currentTime = new Date().toISOString();
-                const currentTimeUTC7 = convertToTimezone(currentTime, 7);
+                // const currentTimeUTC7 = convertToTimezone(currentTime, 7);
                 const endTimeInfo: TimeInfo = {
                     shift_time,
-                    timestamp: currentTimeUTC7,
+                    timestamp: currentTime,
                     image_url,
                     lat,
                     lon

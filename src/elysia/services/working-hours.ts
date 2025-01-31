@@ -1,6 +1,6 @@
 import { esClient } from "@/elysia/utils/es";
 import { ES_IDX_TIME_RECORD } from "@/elysia/utils/const";
-import { formatDateTime, formatTime, calculateDuration } from "@/elysia/utils/helpers"
+import { formatDateTime, formatTime, calculateDuration, convertToTimezone } from "@/elysia/utils/helpers"
 import { 
     ChangeLogEntry,
     WorkingHour,
@@ -192,28 +192,28 @@ function generateChangeDescription(currentLog: ChangeLogEntry, previousLog: Chan
     // Compare start time
     if (currentLog.data.start_time?.shift_time !== previousLog.data.start_time?.shift_time) {
         changes.push(
-            `${prefix}Shift start time was updated from ${formatDateTime(previousLog.data.start_time?.shift_time!)} to ${formatDateTime(currentLog.data.start_time?.shift_time!)}`
+            `${prefix}Shift start time was updated from ${formatDateTime(convertToTimezone(previousLog.data.start_time?.shift_time!, 7))} to ${formatDateTime(convertToTimezone(currentLog.data.start_time?.shift_time!, 7))}`
         );
     }
     
     // Compare start timestamp
     if (currentLog.data.start_time?.timestamp !== previousLog.data.start_time?.timestamp) {
         changes.push(
-            `${prefix}Clock-in time was updated from ${formatDateTime(previousLog.data.start_time?.timestamp!)} to ${formatDateTime(currentLog.data.start_time?.timestamp!)}`
+            `${prefix}Clock-in time was updated from ${formatDateTime(convertToTimezone(previousLog.data.start_time?.timestamp!, 7))} to ${formatDateTime(convertToTimezone(currentLog.data.start_time?.timestamp!, 7))}`
         );
     }
     
     // Compare end time
     if (currentLog.data.end_time?.shift_time !== previousLog.data.end_time?.shift_time) {
         changes.push(
-            `${prefix}Shift end time was updated from ${formatDateTime(previousLog.data.end_time?.shift_time!)} to ${formatDateTime(currentLog.data.end_time?.shift_time!)}`
+            `${prefix}Shift end time was updated from ${formatDateTime(convertToTimezone(previousLog.data.end_time?.shift_time!, 7))} to ${formatDateTime(convertToTimezone(currentLog.data.end_time?.shift_time!, 7))}`
         );
     }
     
     // Compare end timestamp
     if (currentLog.data.end_time?.timestamp !== previousLog.data.end_time?.timestamp) {
         changes.push(
-            `${prefix}Clock-out time was updated from ${formatDateTime(previousLog.data.end_time?.timestamp!)} to ${formatDateTime(currentLog.data.end_time?.timestamp!)}`
+            `${prefix}Clock-out time was updated from ${formatDateTime(convertToTimezone(previousLog.data.end_time?.timestamp!, 7))} to ${formatDateTime(convertToTimezone(currentLog.data.end_time?.timestamp!, 7))}`
         );
     }
     
@@ -282,29 +282,24 @@ export async function getWorkingHoursExporter(
                         if (!log.is_system && index > 0) {
                             const previousLog = shiftDetail.change_log![index - 1];
                             changes = generateChangeDescription(log, previousLog);
-                            console.log(log)
-                            console.log(previousLog)
-                            console.log("_______")
-                            console.log(changes)
-                            console.log("========")
                             changeHistory.push(...changes);
                         }
                     });
                     
                     const start = isValidDateString(shiftDetail.start_time.timestamp) 
-                        ? formatTime(new Date(shiftDetail.start_time.timestamp))
+                        ? formatTime(new Date(convertToTimezone(shiftDetail.start_time.timestamp, 7)))
                         : "00:00";
 
                     const end = isValidDateString(shiftDetail.end_time!.timestamp)
-                        ? formatTime(new Date(shiftDetail.end_time!.timestamp))
+                        ? formatTime(new Date(convertToTimezone(shiftDetail.end_time!.timestamp, 7)))
                         : "00:00";
                     
                     const startOfficial = isValidDateString(shiftDetail.start_time.shift_time)
-                        ? formatTime(new Date(shiftDetail.start_time.shift_time))
+                        ? formatTime(new Date(convertToTimezone(shiftDetail.start_time.shift_time, 7)))
                         : "00:00";
                     
                     const endOfficial = isValidDateString(shiftDetail.end_time!.shift_time)
-                        ? formatTime(new Date(shiftDetail.end_time!.shift_time))
+                        ? formatTime(new Date(convertToTimezone(shiftDetail.end_time!.shift_time, 7)))
                         : "00:00";
                     
                     const shiftData: ExportedShiftDetail = {
