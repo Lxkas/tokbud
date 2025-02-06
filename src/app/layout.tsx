@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-import { ClerkProvider } from "@clerk/nextjs";
+import { ClerkProvider, SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/nextjs";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@radix-ui/react-separator";
@@ -38,6 +38,12 @@ export default function RootLayout({
 								<SidebarTrigger className="-ml-1" />
 								<Separator orientation="vertical" className="mr-2 h-4" />
 								PATH HERE
+								<SignedIn>
+									<UserButton />
+								</SignedIn>
+								<SignedOut>
+									<SignInButton />
+								</SignedOut>
 							</header>
 							<div className="flex flex-1 flex-col gap-4 p-4">{children}</div>
 						</SidebarInset>

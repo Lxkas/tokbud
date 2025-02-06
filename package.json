@@ -9,8 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.735.0",
-    "@aws-sdk/s3-request-presigner": "^3.735.0",
+    "@aws-sdk/client-s3": "3.588.0",
+    "@aws-sdk/s3-request-presigner": "3.588.0",
     "@clerk/nextjs": "^6.10.3",
     "@elastic/elasticsearch": "^8.17.0",
     "@elysiajs/eden": "^1.2.0",
@@ -29,6 +29,7 @@
     "bun": "^1.2.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cookies-next": "^5.1.0",
     "date-fns": "^4.1.0",
     "elysia": "^1.2.10",
     "geolib": "^3.3.4",

@@ -32,8 +32,8 @@ export const uploadController = new Elysia({ prefix: "/upload" }).use(jwtMiddlew
 			const signedUrl = await getSignedUrl(
 				s3Client,
 				new PutObjectCommand({
-					Bucket: "time-record",
-					Key: body.fileKey,
+					Bucket: "tokbud",
+					Key: `time-record/${body.fileKey}`,
 					ContentType: body.contentType,
 					ContentLength: body.contentSize,
 				}),

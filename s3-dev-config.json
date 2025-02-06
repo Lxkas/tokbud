@@ -19,11 +19,11 @@
       ]
     },
     {
-      "name": "ro_user",
+      "name": "anonymous",
       "credentials": [
         {
-          "accessKey": "ro",
-          "secretKey": "ro"
+          "accessKey": "",
+          "secretKey": ""
         }
       ],
       "actions": [

@@ -10,6 +10,8 @@ import { CameraCapture } from "@/components/camera-capture";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { setCookie } from "cookies-next";
+import crypto from "crypto";
 
 // 1) Import your typed Elysia client
 import { elysia } from "@/elysia/client";
@@ -17,6 +19,7 @@ import { elysia } from "@/elysia/client";
 // 2) Import Clerk hooks for auth
 import { useSession, useUser } from "@clerk/nextjs";
 import { WorkingHourResponse } from "@/elysia/types/working-hours";
+import Image from "next/image";
 
 interface ClockEvent {
 	type: "in" | "out";
@@ -24,6 +27,7 @@ interface ClockEvent {
 	reason?: string;
 	timestamp: Date;
 	docId?: string;
+	imageUrl: string;
 }
 
 function formatDate(date: Date | undefined, formatString: string) {
@@ -52,6 +56,7 @@ export default function TimeTracker() {
 
 	// Recent activity events
 	const [events, setEvents] = useState<ClockEvent[]>([]);
+	const [uploadImageUrl, setUploadImageUrl] = useState<string>("");
 
 	// Auth
 	const { isSignedIn, session } = useSession();
@@ -91,6 +96,8 @@ export default function TimeTracker() {
 
 		const jwt = await session?.getToken({ template: "Auth" });
 		if (!jwt) return;
+
+		setCookie("auth", jwt);
 
 		const today = format(new Date(), "yyyy-MM-dd");
 		const response = await elysia.api["working-hours"]["detail"].get({
@@ -179,23 +186,27 @@ export default function TimeTracker() {
 
 				// If there's a start_time, create a "Clock In" event
 				if (shift.start_time?.timestamp) {
+					const imageUrl = shift.start_time?.image_url;
 					newEvents.push({
 						type: "in",
 						shiftType,
 						reason,
 						timestamp: new Date(shift.start_time.timestamp),
 						docId,
+						imageUrl,
 					});
 				}
 
 				// If there's an end_time, create a "Clock Out" event
 				// (only if the shift is complete)
 				if (isComplete && shift.end_time?.timestamp) {
+					const imageUrl = shift.end_time?.image_url;
 					newEvents.push({
 						type: "out",
 						shiftType,
 						reason,
 						timestamp: new Date(shift.end_time.timestamp),
+						imageUrl,
 					});
 				}
 			});
@@ -208,8 +219,40 @@ export default function TimeTracker() {
 		setIsLoadingShiftData(false);
 	}
 
+	async function uploadImage(imageDataUrl: string) {
+		const blob = await fetch(imageDataUrl).then((res) => res.blob());
+		const fileKey = crypto.randomBytes(32).toString("hex");
+
+		if (!blob) {
+			console.error("no blob");
+		}
+
+
+		const signedUrlResponse = await elysia.api.upload.index.post({
+			fileKey,
+			contentType: blob.type,
+			contentSize: blob.size,
+		});
+
+		// may be throw error and have caller catch it, then stop clock in
+		const signedUrl = signedUrlResponse.data?.signedUrl;
+		if (!signedUrl) {
+			alert("upload image failed");
+			return;
+		}
+
+
+		await fetch(signedUrl, {
+			method: "PUT",
+			body: blob,
+		});
+
+		setUploadImageUrl(`http://localhost:8333/tokbud/time-record/${fileKey}`);
+	}
+
 	// Handle clock in with optimistic update
 	const handlePhotoCapture = useCallback((imageDataUrl: string) => {
+		uploadImage(imageDataUrl);
 		setPhotoDataUrl(imageDataUrl);
 		setShowCamera(false);
 		setIsCapturingPhoto(false);
@@ -248,6 +291,7 @@ export default function TimeTracker() {
 					shiftType,
 					reason: shiftType === "overtime" ? overtimeReason : undefined,
 					timestamp: now,
+					imageUrl: uploadImageUrl,
 				},
 				...prev,
 			]);
@@ -259,11 +303,13 @@ export default function TimeTracker() {
 				throw new Error("No valid token found. Please sign in again.");
 			}
 
+			setCookie("auth", jwt);
+
 			const payload = {
 				shift_type: shiftType,
 				reason: shiftType === "overtime" ? overtimeReason : undefined,
 				shift_time: new Date().toISOString(),
-				image_url: "urmum",
+				image_url: uploadImageUrl,
 				lat: 13.8445,
 				lon: 100.5802,
 			};
@@ -319,6 +365,7 @@ export default function TimeTracker() {
 					shiftType,
 					reason: shiftType === "overtime" ? overtimeReason : undefined,
 					timestamp: now,
+					imageUrl: uploadImageUrl,
 				},
 				...prev,
 			]);
@@ -330,10 +377,12 @@ export default function TimeTracker() {
 				throw new Error("No valid token found. Please sign in again.");
 			}
 
+			setCookie("auth", jwt);
+
 			const payload = {
 				doc_id: docId,
 				shift_time: new Date().toISOString(),
-				image_url: photoDataUrl,
+				image_url: uploadImageUrl,
 				lat: 13.8445,
 				lon: 100.5802,
 			};
@@ -523,6 +572,9 @@ export default function TimeTracker() {
 									<span className="text-sm text-muted-foreground">
 										{formatDate(event.timestamp, "h:mm:ss a")}
 									</span>
+									{event.imageUrl && (
+										<Image src={event.imageUrl} width={200} height={200} alt="image" />
+									)}
 								</div>
 							))
 						)}
