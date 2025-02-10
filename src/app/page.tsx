@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { setCookie } from "cookies-next";
 import crypto from "crypto";
 
+import { th } from "date-fns/locale";
+
 // 1) Import your typed Elysia client
 import { elysia } from "@/elysia/client";
 
@@ -31,9 +33,15 @@ interface ClockEvent {
 }
 
 function formatDate(date: Date | undefined, formatString: string) {
-	if (!date) return "Loading...";
-	return format(date, formatString);
+	if (!date) return "กำลังโหลด...";
+	return format(date, formatString, { locale: th });
 }
+
+const shiftTypeMapping: Record<string, string> = {
+	"on-site": "on-site",
+	wfh: "WFH",
+	overtime: "ล่วงเวลา",
+};
 
 export default function TimeTracker() {
 	const [currentTime, setCurrentTime] = useState<Date>();
@@ -81,7 +89,7 @@ export default function TimeTracker() {
 		fetchShiftStatus()
 			.catch((err) => {
 				console.error("Failed to fetch shift status:", err);
-				alert("Failed to load your shift status. Please try refreshing the page.");
+				alert("ไม่สามารถโหลดสถานะการทำงานของคุณได้ กรุณาลองรีเฟรชหน้าเว็บ");
 			})
 			.finally(() => {
 				setIsLoading(false);
@@ -116,7 +124,7 @@ export default function TimeTracker() {
 		const allRecords = Array.isArray(result.data) ? result.data : [];
 
 		if (!allRecords.length) {
-			// No record => user is.. clocked out?
+			// No record => user is clocked out?
 			setIsClockedIn(false);
 			setDocId(null);
 			setShiftType("on-site");
@@ -152,10 +160,8 @@ export default function TimeTracker() {
 				// The newest shift is incomplete => user is clocked in
 				setIsClockedIn(true);
 				setDocId(doc_id || null);
-
 				//@ts-ignore - too lazy rn
 				setShiftType(shift_type || "on-site");
-
 				setOvertimeReason(shift_type === "overtime" && reason ? reason : "");
 			} else {
 				// The newest shift is complete => user is clocked out
@@ -227,7 +233,6 @@ export default function TimeTracker() {
 			console.error("no blob");
 		}
 
-
 		const signedUrlResponse = await elysia.api.upload.index.post({
 			fileKey,
 			contentType: blob.type,
@@ -237,10 +242,9 @@ export default function TimeTracker() {
 		// may be throw error and have caller catch it, then stop clock in
 		const signedUrl = signedUrlResponse.data?.signedUrl;
 		if (!signedUrl) {
-			alert("upload image failed");
+			alert("การอัปโหลดรูปภาพล้มเหลว");
 			return;
 		}
-
 
 		await fetch(signedUrl, {
 			method: "PUT",
@@ -260,17 +264,17 @@ export default function TimeTracker() {
 
 	const handleClockIn = async () => {
 		if (!isSignedIn) {
-			alert("Please sign in to clock in.");
+			alert("กรุณาเข้าสู่ระบบเพื่อลงเวลาเข้า");
 			return;
 		}
 
 		if (!shiftType) {
-			alert("Please select a shift type before clocking in.");
+			alert("กรุณาเลือกประเภทกะก่อนลงเวลาเข้า");
 			return;
 		}
 
 		if (shiftType === "overtime" && !overtimeReason.trim()) {
-			alert("Please provide a reason for overtime.");
+			alert("กรุณาระบุเหตุผลสำหรับการทำงานล่วงเวลา");
 			return;
 		}
 
@@ -332,19 +336,19 @@ export default function TimeTracker() {
 			// Revert optimistic updates on error
 			setIsClockedIn(false);
 			setEvents((prev) => prev.slice(1));
-			alert(`Clock in failed: ${error.message}`);
+			alert(`ลงเวลาเข้าไม่สำเร็จ: ${error.message}`);
 		}
 	};
 
 	// Handle clock out with optimistic update
 	const handleClockOut = async () => {
 		if (!isSignedIn) {
-			alert("Please sign in to clock out.");
+			alert("กรุณาเข้าสู่ระบบเพื่อลงเวลาออก");
 			return;
 		}
 
 		if (!docId) {
-			alert("Cannot clock out without a valid doc_id.");
+			alert("ไม่สามารถลงเวลาออกได้เนื่องจากไม่มี doc_id ที่ถูกต้อง");
 			return;
 		}
 
@@ -405,7 +409,7 @@ export default function TimeTracker() {
 			// Revert optimistic updates on error
 			setIsClockedIn(true);
 			setEvents((prev) => prev.slice(1));
-			alert(`Clock out failed: ${error.message}`);
+			alert(`ลงเวลาออกไม่สำเร็จ: ${error.message}`);
 		}
 	};
 
@@ -441,35 +445,35 @@ export default function TimeTracker() {
 	return (
 		<Card className="w-full max-w-md mx-auto">
 			<CardHeader>
-				<CardTitle className="text-2xl font-bold">Time Tracker</CardTitle>
-				<CardDescription>Select your shift type and clock in/out</CardDescription>
+				<CardTitle className="text-2xl font-bold">บันทึกเวลางาน</CardTitle>
+				<CardDescription>เลือกประเภทกะและลงเวลาเข้า/ออก</CardDescription>
 			</CardHeader>
 			<CardContent>
 				{/* Current Time Display */}
 				<div className="flex items-center justify-between mb-6">
 					<div className="flex items-center space-x-2">
 						<Clock className="w-5 h-5" />
-						<span className="text-lg font-semibold">{formatDate(currentTime, "h:mm:ss a")}</span>
+						<span className="text-lg font-semibold">{formatDate(currentTime, "HH:mm:ss")}</span>
 					</div>
-					<span className="text-sm">{formatDate(currentTime, "EEEE, MMMM d, yyyy")}</span>
+					<span className="text-sm">วัน{formatDate(currentTime, "EEEE ที่ d MMMM yyyy")}</span>
 				</div>
 
 				{/* Shift Type Selection */}
 				<div className="space-y-4 mb-6">
 					<div className="space-y-2">
-						<Label htmlFor="shift-select">Shift Type</Label>
+						<Label htmlFor="shift-select">ประเภทกะ</Label>
 						<Select
 							disabled={isClockedIn}
 							onValueChange={(value) => setShiftType(value as "on-site" | "wfh" | "overtime")}
 							value={shiftType}
 						>
 							<SelectTrigger id="shift-select">
-								<SelectValue placeholder="Choose your shift type" />
+								<SelectValue placeholder="เลือกประเภทกะของคุณ" />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="on-site">On-Site</SelectItem>
-								<SelectItem value="wfh">WFH</SelectItem>
-								<SelectItem value="overtime">Overtime</SelectItem>
+								<SelectItem value="on-site">ทำงานในสถานที่</SelectItem>
+								<SelectItem value="wfh">ทำงานจากที่บ้าน</SelectItem>
+								<SelectItem value="overtime">ทำงานล่วงเวลา</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
@@ -477,22 +481,22 @@ export default function TimeTracker() {
 					{/* Show reason only if overtime */}
 					{shiftType === "overtime" && (
 						<div className="space-y-2">
-							<Label htmlFor="overtime-reason">Overtime Reason</Label>
+							<Label htmlFor="overtime-reason">เหตุผลทำงานล่วงเวลา</Label>
 							<Input
 								id="overtime-reason"
 								value={overtimeReason}
 								onChange={(e) => setOvertimeReason(e.target.value)}
 								disabled={isClockedIn}
-								placeholder="e.g. [USER] working for OT"
+								placeholder="เช่น [USER] ทำงานล่วงเวลา"
 							/>
 						</div>
 					)}
 
 					{/* Status Display */}
 					<div className="flex items-center justify-between">
-						<span className="text-lg font-semibold">Status:</span>
+						<span className="text-lg font-semibold">สถานะ:</span>
 						<span className={`text-lg font-bold ${isClockedIn ? "text-green-500" : "text-red-500"}`}>
-							{isClockedIn ? `Clocked In (${shiftType})` : "Clocked Out"}
+							{isClockedIn ? `กำลังทำงาน (${shiftTypeMapping[shiftType]})` : "ยังไม่เข้างาน"}
 						</span>
 					</div>
 				</div>
@@ -517,27 +521,27 @@ export default function TimeTracker() {
 					}
 				>
 					{isLoading ? (
-						"Loading..."
+						"กำลังโหลด..."
 					) : isPending ? (
 						isClockedIn ? (
-							"Clocking out..."
+							"กำลังลงเวลาออก..."
 						) : (
-							"Clocking in..."
+							"กำลังลงเวลาเข้า..."
 						)
 					) : isCapturingPhoto ? (
 						<>
 							<Camera className="w-4 h-4 mr-2" />
-							Take Selfie
+							ถ่ายภาพตนเอง
 						</>
 					) : isClockedIn ? (
 						<>
 							<LogOut className="w-4 h-4 mr-2" />
-							Clock Out
+							ลงเวลาออก
 						</>
 					) : (
 						<>
 							<LogIn className="w-4 h-4 mr-2" />
-							Clock In
+							ลงเวลาเข้า
 						</>
 					)}
 				</Button>
@@ -545,28 +549,29 @@ export default function TimeTracker() {
 				{/* If no shift type selected & not clocked in */}
 				{!isClockedIn && !shiftType && (
 					<p className="text-sm text-muted-foreground mt-2 text-center">
-						Select a shift type above to enable clock in.
+						กรุณาเลือกประเภทกะด้านบนเพื่อเปิดใช้งานการลงเวลาเข้า
 					</p>
 				)}
 			</CardContent>
 
 			<CardFooter>
 				<div className="w-full">
-					<h3 className="text-lg font-semibold mb-2">Recent Activity</h3>
+					<h3 className="text-lg font-semibold mb-2">กิจกรรมล่าสุด</h3>
 					<ScrollArea className="h-[200px] w-full rounded-md border p-4">
 						{isLoading ? (
 							<div className="flex justify-center items-center h-full">
-								<span className="text-muted-foreground">Loading activity...</span>
+								<span className="text-muted-foreground">กำลังโหลดกิจกรรม...</span>
 							</div>
 						) : events.length === 0 ? (
 							<div className="flex justify-center items-center h-full">
-								<span className="text-muted-foreground">No recent activity</span>
+								<span className="text-muted-foreground">ไม่มีกิจกรรมล่าสุด</span>
 							</div>
 						) : (
 							events.map((event, index) => (
 								<div key={index} className="flex justify-between items-center mb-2">
 									<span className="font-medium">
-										{event.type === "in" ? "Clocked In" : "Clocked Out"} ({event.shiftType}
+										{event.type === "in" ? "ลงเวลาเข้า" : "ลงเวลาออก"} (
+										{shiftTypeMapping[event.shiftType]}
 										{event.shiftType === "overtime" && event.reason ? ` / ${event.reason}` : ""})
 									</span>
 									<span className="text-sm text-muted-foreground">
