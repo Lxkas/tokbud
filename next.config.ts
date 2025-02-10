@@ -12,6 +12,9 @@ const nextConfig: NextConfig = {
 			},
 		],
 	},
+	experimental: {
+		nodeMiddleware: true, // Enable Node.js middleware
+	},
 };
 
 export default nextConfig;
