@@ -5,6 +5,7 @@ import { timeRecordController2 } from "./controllers/time-record";
 import { jwtMiddleware } from "@/middleware";
 import { workingHoursController } from "./controllers/working-hours";
 import { uploadController } from "./controllers/upload";
+import { cors } from "@elysiajs/cors";
 
 interface DevSessionParams {
 	userId: string;
@@ -23,6 +24,7 @@ interface ElysiaDevSessionContext {
 }
 
 export const elysiaApp = new Elysia({ prefix: "/api" })
+	.use(cors())
 	.use(jwtMiddleware)
 	.get("/dev-session/:userId", async ({ params, jwt, cookie: { auth } }: ElysiaDevSessionContext) => {
 		const token = await jwt.sign({
