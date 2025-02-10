@@ -6,5 +6,5 @@ export const s3Client = new S3Client({
 		secretAccessKey: "admin",
 	},
 	forcePathStyle: true,
-	endpoint: "http://localhost:8333",
+	endpoint: "https://uploads.stamford.dev",
 });

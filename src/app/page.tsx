@@ -251,7 +251,7 @@ export default function TimeTracker() {
 			body: blob,
 		});
 
-		setUploadImageUrl(`http://localhost:8333/tokbud/time-record/${fileKey}`);
+		setUploadImageUrl(`https://uploads.stamford.dev/tokbud/time-record/${fileKey}`);
 	}
 
 	// Handle clock in with optimistic update
@@ -337,6 +337,8 @@ export default function TimeTracker() {
 			setIsClockedIn(false);
 			setEvents((prev) => prev.slice(1));
 			alert(`ลงเวลาเข้าไม่สำเร็จ: ${error.message}`);
+		} finally {
+			setUploadImageUrl("");
 		}
 	};
 
@@ -410,6 +412,8 @@ export default function TimeTracker() {
 			setIsClockedIn(true);
 			setEvents((prev) => prev.slice(1));
 			alert(`ลงเวลาออกไม่สำเร็จ: ${error.message}`);
+		} finally {
+			setUploadImageUrl("");
 		}
 	};
 

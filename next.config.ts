@@ -10,6 +10,12 @@ const nextConfig: NextConfig = {
 				port: "8333",
 				pathname: "/**/*",
 			},
+			{
+				protocol: "https",
+				hostname: "uploads.stamford.dev",
+				port: "",
+				pathname: "/**/*",
+			},
 		],
 	},
 	experimental: {
