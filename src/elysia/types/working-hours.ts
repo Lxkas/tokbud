@@ -124,3 +124,22 @@ export interface ElysiaWorkingHoursContext {
     };
   };
 }
+
+export interface UserResponse {
+    user_id: string;
+    employee_id: string | null;
+    img: string | null;
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+    branch_id: string | null;
+    branch_name: string | null;
+    position: string | null;
+}
+
+export interface RequestContext {
+    set: {
+        status: number;
+        headers?: Record<string, string>;
+    };
+}

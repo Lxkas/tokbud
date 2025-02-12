@@ -1,4 +1,5 @@
 import { TimeInfo } from "@/elysia/types/time-record";
+import { UserResponse } from "@/elysia/types/working-hours";
 
 export function isValidUTCDateTime(dateString: string): boolean {
     const regex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
@@ -145,4 +146,54 @@ export function calculateDuration(startTime: string | undefined, endTime: string
         console.error('Error calculating duration:', error);
         return null;
     }
+}
+
+export function transformUserData(user: any): UserResponse {
+    // Helper function to check if a value is empty
+    const isEmpty = (value: any) => value === null || value === undefined || value === '';
+
+    // Get first organization if exists
+    const organization = user.organizations?.[0]?.organization;
+    const publicUserData = user.organizations?.[0]?.publicUserData;
+
+    // Get email with priority
+    const email = !isEmpty(publicUserData?.identifier) ? publicUserData.identifier :
+                 !isEmpty(user.emailAddresses?.[0]?.emailAddress) ? user.emailAddresses[0].emailAddress :
+                 !isEmpty(user.externalAccounts?.[0]?.emailAddress) ? user.externalAccounts[0].emailAddress :
+                 null;
+
+    // Get first name with priority
+    const firstName = !isEmpty(publicUserData?.firstName) ? publicUserData.firstName :
+                     !isEmpty(user.firstName) ? user.firstName :
+                     !isEmpty(user.externalAccounts?.[0]?.firstName) ? user.externalAccounts[0].firstName :
+                     null;
+
+    // Get last name with priority
+    const lastName = !isEmpty(publicUserData?.lastName) ? publicUserData.lastName :
+                    !isEmpty(user.lastName) ? user.lastName :
+                    !isEmpty(user.externalAccounts?.[0]?.lastName) ? user.externalAccounts[0].lastName :
+                    null;
+
+    // Get image with priority
+    const img = !isEmpty(publicUserData?.imageUrl) ? publicUserData.imageUrl :
+                !isEmpty(user.imageUrl) ? user.imageUrl :
+                !isEmpty(user.externalAccounts?.[0]?.imageUrl) ? user.externalAccounts[0].imageUrl :
+                null;
+
+    // Get position with priority
+    const position = !isEmpty(user.publicMetadata?.department) ? user.publicMetadata.department :
+                    !isEmpty(organization?.publicMetadata?.department) ? organization.publicMetadata.department :
+                    null;
+
+    return {
+        user_id: user.id,
+        employee_id: user.publicMetadata?.employee_id || null,
+        img,
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        branch_id: organization?.id || null,
+        branch_name: organization?.name || null,
+        position
+    };
 }

@@ -19,7 +19,7 @@ import { th } from "date-fns/locale";
 import { elysia } from "@/elysia/client";
 
 // 2) Import Clerk hooks for auth
-import { useSession, useUser } from "@clerk/nextjs";
+import { SignInButton, useSession, useUser } from "@clerk/nextjs";
 import { WorkingHourResponse } from "@/elysia/types/working-hours";
 import Image from "next/image";
 

@@ -1,4 +1,5 @@
 import { clerkClient } from "@/elysia/utils/clerk";
+import { User, OrganizationMembership } from "@clerk/backend";
 
 export async function getUserOrganization(userId: string) {
 	try {
@@ -17,4 +18,40 @@ export async function getUserOrganization(userId: string) {
 		// Re-throw other unexpected errors
 		throw error;
 	}
+}
+
+export async function getAllUsersWithOrganizations() {
+    try {
+        // Get all users first
+        const usersResponse = await clerkClient.users.getUserList();
+        
+        // Get organization data for each user
+        const usersWithOrgs = await Promise.all(
+            usersResponse.data.map(async (user: User) => {
+                try {
+                    const orgMemberships = await clerkClient.users.getOrganizationMembershipList({
+                        userId: user.id
+                    });
+                    
+                    return {
+                        ...user,
+                        organizations: orgMemberships.data
+                    };
+                } catch (error) {
+                    // If user has no organizations, return user with empty org array
+                    return {
+                        ...user,
+                        organizations: []
+                    };
+                }
+            })
+        );
+
+        return usersWithOrgs;
+    } catch (error) {
+        if (error instanceof Error) {
+            throw new Error(`Failed to fetch users with organizations: ${error.message}`);
+        }
+        throw error;
+    }
 }

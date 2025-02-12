@@ -1,12 +1,29 @@
 import Elysia from "elysia";
-import { getUserOrganization } from "@/elysia/services/clerk";
+import { getUserOrganization, getAllUsersWithOrganizations } from "@/elysia/services/clerk";
 import { getWorkingHours, getWorkingHoursExporter } from "@/elysia/services/working-hours";
 import { jwtMiddleware } from "@/middleware";
-import { ElysiaWorkingHoursContext } from "@/elysia/types/working-hours";
-import { isValidDateFormat } from "@/elysia/utils/helpers"
+import { ElysiaWorkingHoursContext, RequestContext } from "@/elysia/types/working-hours";
+import { isValidDateFormat, transformUserData } from "@/elysia/utils/helpers"
 
 export const workingHoursController = new Elysia()
     .use(jwtMiddleware)
+    .get("/users/all", async ({ set }: RequestContext) => {
+        try {
+            const usersWithOrgs = await getAllUsersWithOrganizations();
+            const transformedUsers = usersWithOrgs.map(transformUserData);
+            
+            return {
+                success: true,
+                data: transformedUsers
+            };
+        } catch (error) {
+            set.status = 500;
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : "Failed to fetch users with organizations"
+            };
+        }
+    })
     .get("/working-hours/export", async ({ query, jwt, set, cookie: { auth } }: ElysiaWorkingHoursContext) => {
         try {
             // Verify JWT authentication
@@ -199,16 +216,16 @@ export const workingHoursController = new Elysia()
                 sort_shifts_ascending: sortShiftsAsc
             });
             
-            const exporter = await getWorkingHoursExporter({
-                user_id: effectiveUserId,
-                org_id: effectiveOrgId,
-                start_date,
-                end_date,
-                sort_dates_ascending: sortDatesAsc,
-                sort_shifts_ascending: sortShiftsAsc
-            });
+            // const exporter = await getWorkingHoursExporter({
+            //     user_id: effectiveUserId,
+            //     org_id: effectiveOrgId,
+            //     start_date,
+            //     end_date,
+            //     sort_dates_ascending: sortDatesAsc,
+            //     sort_shifts_ascending: sortShiftsAsc
+            // });
 
-            console.log(JSON.stringify(exporter, null, 2));
+            // console.log(JSON.stringify(exporter, null, 2));
 
             return workingHours;
 
