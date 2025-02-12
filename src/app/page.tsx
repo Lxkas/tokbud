@@ -451,6 +451,7 @@ export default function TimeTracker() {
 			<CardHeader>
 				<CardTitle className="text-2xl font-bold">บันทึกเวลางาน</CardTitle>
 				<CardDescription>เลือกประเภทกะและลงเวลาเข้า/ออก</CardDescription>
+				<SignInButton/>
 			</CardHeader>
 			<CardContent>
 				{/* Current Time Display */}

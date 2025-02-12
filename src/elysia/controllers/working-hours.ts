@@ -1,12 +1,59 @@
 import Elysia from "elysia";
 import { getUserOrganization, getAllUsersWithOrganizations } from "@/elysia/services/clerk";
-import { getWorkingHours, getWorkingHoursExporter } from "@/elysia/services/working-hours";
+import { getWorkingHours, getWorkingHoursExporter, getWorkingHoursSummary } from "@/elysia/services/working-hours";
 import { jwtMiddleware } from "@/middleware";
-import { ElysiaWorkingHoursContext, RequestContext } from "@/elysia/types/working-hours";
-import { isValidDateFormat, transformUserData } from "@/elysia/utils/helpers"
+import { ElysiaWorkingHoursContext, RequestContext, WorkingHoursSummaryRequestContext } from "@/elysia/types/working-hours";
+import { isValidDateFormat, transformUserData, validateRequest } from "@/elysia/utils/helpers"
 
 export const workingHoursController = new Elysia()
     .use(jwtMiddleware)
+    .post("/users/working-hours-summary", async ({ set, body }: WorkingHoursSummaryRequestContext) => {
+        const summary = await getWorkingHoursSummary({
+            user_ids: ['user_2srDWveiLNfK82G9cafoYiFk2QQ',
+                'user_2srDR9L3cGp4cMwoHChzmGSW6FD',
+                'user_2sZiSwg8vtclo9Axc2FdwBWxVPq',
+                'user_2rkKhy9VF2JziL7q4OgH5f7T85y',
+                'user_2rkKh0dgkzfzB3taTyy1KsRxorW',
+                'user_2riGKbNYXYcEw48Muzgp0N3y5vE',
+                'user_2riGJwrbjeqS3iHPEcZze9ZheuP',
+                'user_2rhkBbqbyoTvNs7FIje4DWKDgFv'
+            ],
+            start_date: '2025-01-01',
+            end_date: '2025-04-31',
+            sort_dates_ascending: true
+        });
+        try {
+            // Validate request body
+            const validationError = validateRequest(body);
+            if (validationError) {
+                set.status = 400;
+                return {
+                    success: false,
+                    error: validationError
+                };
+            }
+    
+            // Call the summary function with the provided parameters
+            const summary = await getWorkingHoursSummary({
+                user_ids: body.user_ids,
+                start_date: body.start_date,
+                end_date: body.end_date,
+                sort_dates_ascending: body.sort_dates_ascending
+            });
+    
+            return {
+                success: true,
+                data: summary
+            };
+    
+        } catch (error) {
+            set.status = 500;
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : "Failed to fetch working hours summary"
+            };
+        }
+    })
     .get("/users/all", async ({ set }: RequestContext) => {
         try {
             const usersWithOrgs = await getAllUsersWithOrganizations();

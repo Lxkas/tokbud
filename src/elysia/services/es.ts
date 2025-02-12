@@ -81,3 +81,90 @@ export async function getTodayRegularShift(user_id: string, date: string): Promi
 		date: hit._source.date,
 	};
 }
+
+
+
+
+
+
+
+
+
+
+
+
+interface WorkingHoursQueryParams {
+    user_ids: string[];
+    start_date?: string;
+    end_date?: string;
+    sort_dates_ascending?: boolean;
+}
+
+interface WorkingHoursDoc {
+    user_id: string;
+    all_shift: {
+        date: string;
+        shift: Array<{
+            is_complete: boolean;
+            start_time: {
+                timestamp: string;
+            };
+            end_time?: {
+                timestamp: string;
+            };
+        }>;
+    }[];
+}
+
+export async function getWorkingHoursData(params: WorkingHoursQueryParams) {
+    try {
+        // Construct base query
+        const must: any[] = [
+            {
+                terms: {
+                    user_id: params.user_ids
+                }
+            }
+        ];
+
+        // Add date range if provided
+        if (params.start_date || params.end_date) {
+            const range: any = {
+                date: {}
+            };
+            if (params.start_date) {
+                range.date.gte = params.start_date;
+            }
+            if (params.end_date) {
+                range.date.lte = params.end_date;
+            }
+            must.push({
+                range: range
+            });
+        }
+
+        // Execute Elasticsearch query
+        const result = await esClient.search<WorkingHoursDoc>({
+            index: ES_IDX_TIME_RECORD,
+            body: {
+                query: {
+                    bool: {
+                        must: must
+                    }
+                },
+                sort: params.sort_dates_ascending 
+                    ? [{ date: { order: 'asc' } }]
+                    : [{ date: { order: 'desc' } }],
+                size: 10000 // Adjust based on your needs
+            }
+        });
+
+        return {
+            status: 'success',
+            data: result.hits.hits.map(hit => hit._source)
+        };
+    } catch (error) {
+        console.error("Error fetching working hours data:", error);
+        throw error;
+    }
+}

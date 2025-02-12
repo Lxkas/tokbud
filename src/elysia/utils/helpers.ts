@@ -1,5 +1,5 @@
 import { TimeInfo } from "@/elysia/types/time-record";
-import { UserResponse } from "@/elysia/types/working-hours";
+import { UserResponse, WorkingHoursSummaryRequest } from "@/elysia/types/working-hours";
 
 export function isValidUTCDateTime(dateString: string): boolean {
     const regex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
@@ -196,4 +196,36 @@ export function transformUserData(user: any): UserResponse {
         branch_name: organization?.name || null,
         position
     };
+}
+
+export function validateRequest(body: WorkingHoursSummaryRequest): string | null {
+    if (!body.user_ids || !Array.isArray(body.user_ids)) {
+        return "user_ids must be an array";
+    }
+
+    if (body.user_ids.length === 0) {
+        return "user_ids array cannot be empty";
+    }
+
+    if (body.user_ids.some(id => typeof id !== 'string' || !id)) {
+        return "all user_ids must be non-empty strings";
+    }
+
+    if (body.start_date && !isValidDateFormat(body.start_date)) {
+        return "start_date must be in YYYY-MM-DD format";
+    }
+
+    if (body.end_date && !isValidDateFormat(body.end_date)) {
+        return "end_date must be in YYYY-MM-DD format";
+    }
+
+    if (body.start_date && body.end_date) {
+        const start = new Date(body.start_date);
+        const end = new Date(body.end_date);
+        if (start > end) {
+            return "start_date cannot be later than end_date";
+        }
+    }
+
+    return null;
 }

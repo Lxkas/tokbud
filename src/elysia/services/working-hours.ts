@@ -9,7 +9,9 @@ import {
     ExportedWorkingHourResponse,
     ExportedUserWorkingHour,
     ExportedShiftDetail,
-    ExportedIncompleteShift
+    ExportedIncompleteShift,
+    WorkingHoursSummary,
+    WorkingHoursSummaryResponse
 } from "@/elysia/types/working-hours";
 
 // Helper function to safely parse JSON array
@@ -332,5 +334,85 @@ export async function getWorkingHoursExporter(
     return {
         status: originalResponse.status,
         data: exportedData
+    };
+}
+
+export async function getWorkingHoursSummary(
+    params: {
+        user_ids: string[];
+        org_id?: string;
+        start_date?: string;
+        end_date?: string;
+        sort_dates_ascending?: boolean;
+    }
+): Promise<WorkingHoursSummaryResponse> {
+    // Get working hours for each user
+    const summaries: WorkingHoursSummary[] = [];
+    
+    for (const user_id of params.user_ids) {
+        const response = await getWorkingHours({
+            user_id,
+            org_id: params.org_id,
+            start_date: params.start_date,
+            end_date: params.end_date,
+            sort_dates_ascending: params.sort_dates_ascending
+        });
+
+        let totalMinutes = 0;
+        const workingDays = new Set<string>(); // Use Set to count unique working days
+
+        response.data.forEach(userData => {
+            userData.all_shift.forEach(dayShift => {
+                let hasValidShiftForDay = false;
+
+                dayShift.shift.forEach(shiftDetail => {
+                    // Skip incomplete shifts
+                    if (!shiftDetail.is_complete) {
+                        return;
+                    }
+
+                    // Calculate duration only for complete shifts
+                    if (isValidDateString(shiftDetail.start_time.shift_time) && 
+                        isValidDateString(shiftDetail.end_time?.shift_time)) {
+                        
+                        const startTime = new Date(shiftDetail.start_time.shift_time);
+                        const endTime = new Date(shiftDetail.end_time.shift_time);
+                        const durationInMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+                        
+                        if (durationInMinutes > 0) {
+                            totalMinutes += durationInMinutes;
+                            hasValidShiftForDay = true;
+                        }
+                    }
+                });
+
+                // If there was at least one valid shift for this day, count it
+                if (hasValidShiftForDay) {
+                    workingDays.add(dayShift.date);
+                }
+            });
+        });
+
+        // Convert total minutes to HH:mm format
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = Math.floor(totalMinutes % 60);
+        const totalWorkingHours = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+
+        summaries.push({
+            user_id,
+            org_id: response.data[0]?.org_id || params.org_id || '',
+            total_working_hours: totalWorkingHours,
+            total_working_days: workingDays.size
+        });
+    }
+
+    // Sort summaries by user_id if needed
+    if (params.sort_dates_ascending) {
+        summaries.sort((a, b) => a.user_id.localeCompare(b.user_id));
+    }
+
+    return {
+        status: 'success',
+        data: summaries
     };
 }

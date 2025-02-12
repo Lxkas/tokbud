@@ -94,6 +94,18 @@ export interface ExportedIncompleteShift {
     message: string;
 }
 
+export interface WorkingHoursSummary {
+    user_id: string;
+    total_working_hours: string;
+    total_working_days: number;
+    org_id: string;
+}
+
+export interface WorkingHoursSummaryResponse {
+    status: string;
+    data: WorkingHoursSummary[];
+}
+
 
 // For controller
 export interface WorkingHoursQuery {
@@ -142,4 +154,19 @@ export interface RequestContext {
         status: number;
         headers?: Record<string, string>;
     };
+}
+
+export interface WorkingHoursSummaryRequest {
+    user_ids: string[];
+    start_date?: string;  // Optional date in YYYY-MM-DD format
+    end_date?: string;    // Optional date in YYYY-MM-DD format
+    sort_dates_ascending?: boolean;
+}
+
+export interface WorkingHoursSummaryRequestContext {
+    set: {
+        status: number;
+        headers?: Record<string, string>;
+    };
+    body: WorkingHoursSummaryRequest;
 }
