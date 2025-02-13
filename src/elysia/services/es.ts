@@ -168,3 +168,61 @@ export async function getWorkingHoursData(params: WorkingHoursQueryParams) {
         throw error;
     }
 }
+
+
+
+interface TimeRecord {
+    user_id: string;
+    date: string;
+    start_time: {
+        shift_time: string;
+    };
+    is_complete: boolean;
+}
+
+export async function getBulkLatestUserStatus(userIds: string[]) {
+    try {
+        const response = await esClient.search({
+            index: 'time_record',
+            body: {
+                size: userIds.length,  // Get one record per user
+                query: {
+                    bool: {
+                        filter: {
+                            terms: {
+                                user_id: userIds
+                            }
+                        }
+                    }
+                },
+                sort: [
+                    { 
+                        user_id: { order: "asc" }  // Sort by user_id first to group results
+                    },
+                    {
+                        date: { order: "desc" }
+                    },
+                    {
+                        "start_time.shift_time": { order: "desc" }
+                    }
+                ],
+                collapse: {
+                    field: "user_id"  // This will get the first (latest) record per user
+                }
+            }
+        })
+
+        // Create a map of user_id to working status
+        const statusMap = new Map<string, boolean | null>()
+        response.hits.hits.forEach((hit) => {
+            const record = hit._source as TimeRecord
+            statusMap.set(record.user_id, !record.is_complete)
+        })
+
+        // Return status for each requested user_id (null if not found)
+        return userIds.map(userId => statusMap.get(userId) ?? null)
+    } catch (error) {
+        console.error('Error fetching bulk user statuses:', error)
+        return userIds.map(() => null)  // Return null for all users in case of error
+    }
+}

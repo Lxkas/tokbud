@@ -1,5 +1,6 @@
 import Elysia from "elysia";
 import { getUserOrganization, getAllUsersWithOrganizations } from "@/elysia/services/clerk";
+import { getBulkLatestUserStatus } from "@/elysia/services/es";
 import { getWorkingHours, getWorkingHoursExporter, getWorkingHoursSummary } from "@/elysia/services/working-hours";
 import { jwtMiddleware } from "@/middleware";
 import { ElysiaWorkingHoursContext, RequestContext, WorkingHoursSummaryRequestContext } from "@/elysia/types/working-hours";
@@ -8,20 +9,20 @@ import { isValidDateFormat, transformUserData, validateRequest } from "@/elysia/
 export const workingHoursController = new Elysia()
     .use(jwtMiddleware)
     .post("/users/working-hours-summary", async ({ set, body }: WorkingHoursSummaryRequestContext) => {
-        const summary = await getWorkingHoursSummary({
-            user_ids: ['user_2srDWveiLNfK82G9cafoYiFk2QQ',
-                'user_2srDR9L3cGp4cMwoHChzmGSW6FD',
-                'user_2sZiSwg8vtclo9Axc2FdwBWxVPq',
-                'user_2rkKhy9VF2JziL7q4OgH5f7T85y',
-                'user_2rkKh0dgkzfzB3taTyy1KsRxorW',
-                'user_2riGKbNYXYcEw48Muzgp0N3y5vE',
-                'user_2riGJwrbjeqS3iHPEcZze9ZheuP',
-                'user_2rhkBbqbyoTvNs7FIje4DWKDgFv'
-            ],
-            start_date: '2025-01-01',
-            end_date: '2025-04-31',
-            sort_dates_ascending: true
-        });
+        // const summary = await getWorkingHoursSummary({
+        //     user_ids: ['user_2srDWveiLNfK82G9cafoYiFk2QQ',
+        //         'user_2srDR9L3cGp4cMwoHChzmGSW6FD',
+        //         'user_2sZiSwg8vtclo9Axc2FdwBWxVPq',
+        //         'user_2rkKhy9VF2JziL7q4OgH5f7T85y',
+        //         'user_2rkKh0dgkzfzB3taTyy1KsRxorW',
+        //         'user_2riGKbNYXYcEw48Muzgp0N3y5vE',
+        //         'user_2riGJwrbjeqS3iHPEcZze9ZheuP',
+        //         'user_2rhkBbqbyoTvNs7FIje4DWKDgFv'
+        //     ],
+        //     start_date: '2025-01-01',
+        //     end_date: '2025-04-31',
+        //     sort_dates_ascending: true
+        // });
         try {
             // Validate request body
             const validationError = validateRequest(body);
@@ -58,10 +59,22 @@ export const workingHoursController = new Elysia()
         try {
             const usersWithOrgs = await getAllUsersWithOrganizations();
             const transformedUsers = usersWithOrgs.map(transformUserData);
+    
+            // Get all user IDs
+            const userIds = transformedUsers.map(user => user.user_id)
+            
+            // Fetch all statuses in one query
+            const workingStatuses = await getBulkLatestUserStatus(userIds)
+            
+            // Combine the results
+            const usersWithStatus = transformedUsers.map((user, index) => ({
+                ...user,
+                is_working: workingStatuses[index]
+            }))
             
             return {
                 success: true,
-                data: transformedUsers
+                data: usersWithStatus
             };
         } catch (error) {
             set.status = 500;

@@ -1,5 +1,6 @@
 "use client";
-import React, { useState } from 'react';
+import { elysia } from "@/elysia/client";
+import React, { useState, useEffect } from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,70 +28,298 @@ import {
   Circle 
 } from "lucide-react";
 
-// Define interfaces for type safety
-interface UserDetails {
-  email: string;
-  department: string;
-  position: string;
-  totalHours: number;
-  projects: string[];
+// Define interfaces for API responses and data types
+interface WorkingHoursSummaryResponse {
+  success: boolean;
+  data: {
+    data: WorkingHoursSummary[];
+  };
+}
+
+interface UsersResponse {
+  success: boolean;
+  data: {
+    data: APIUser[];
+  };
+}
+
+// Data Types
+interface ErrorResponse {
+  success: boolean;
+  error: string;
+}
+
+type ApiResponse = {
+  200: ErrorResponse | {
+    success: boolean;
+    data: WorkingHoursSummaryResponse;
+  };
+};
+
+interface WorkingHoursSummary {
+  user_id: string;
+  org_id: string;
+  total_working_hours: string;
+  total_working_days: number;
+}
+
+interface APIUser {
+  user_id: string;
+  employee_id: string | null;
+  img: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  branch_id: string | null;
+  branch_name: string | null;
+  position: string | null;
+  is_working: boolean | null;
 }
 
 interface User {
-  id: number;
+  id: string;
   name: string;
   avatarUrl: string;
-  organization: string;
+  branch: string;
   workingSummary: string;
   status: 'working' | 'offline';
-  details: UserDetails;
+  details: {
+    email: string;
+    position: string;
+  };
 }
 
-// Mock data with proper typing
-const mockUsers: User[] = [
-  {
-    id: 1,
-    name: "John Doe",
-    avatarUrl: "https://img.clerk.com/eyJ0eXBlIjoicHJveHkiLCJzcmMiOiJodHRwczovL2ltYWdlcy5jbGVyay5kZXYvb2F1dGhfbGluZS9pbWdfMnNyRFdxQ3RRSzhRbVJpOVlkVUpZV1E4YWVhIn0",
-    organization: "Tech Corp",
-    workingSummary: "40hrs/5days",
-    status: "working",
-    details: {
-      email: "john@techcorp.com",
-      department: "Engineering",
-      position: "Senior Developer",
-      totalHours: 160,
-      projects: ["Project A", "Project B"]
-    }
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    avatarUrl: "https://img.clerk.com/eyJ0eXBlIjoicHJveHkiLCJzcmMiOiJodHRwczovL2ltYWdlcy5jbGVyay5kZXYvb2F1dGhfbGluZS9pbWdfMnNyRFI0V2xkTko2WjEzbnlhcDJDc2NOdjdVIn0",
-    organization: "Design Studio",
-    workingSummary: "32hrs/4days",
-    status: "offline",
-    details: {
-      email: "jane@designstudio.com",
-      department: "Design",
-      position: "UI/UX Designer",
-      totalHours: 128,
-      projects: ["Website Redesign"]
-    }
-  }
-];
+// const AdminDashboard = () => {
+//   const [users, setUsers] = useState<User[]>([]);
+//   const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+//     const today = new Date();
+//     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+//     return {
+//       from: firstDay,
+//       to: today
+//     };
+//   });
+//   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+//   const [searchQuery, setSearchQuery] = useState<string>("");
+//   const [expandedRows, setExpandedRows] = useState<string[]>([]);
+
+//   // Function to format working hours
+//   const formatWorkingHours = (hoursStr: string): string => {
+//     const [hours, minutes] = hoursStr.split(':').map(Number);
+//     const totalHours = minutes >= 30 ? Math.ceil(hours) : Math.floor(hours);
+//     return `${totalHours}hrs`;
+//   };
+
+//   // Function to fetch working hours summary
+//   const fetchWorkingHoursSummary = async (
+//     userIds: string[], 
+//     startDate: Date, 
+//     endDate: Date
+//   ): Promise<WorkingHoursSummary[]> => {
+//     try {
+//       const response = await elysia.api["users"]["working-hours-summary"].post({
+//         user_ids: userIds,
+//         start_date: startDate.toISOString().split('T')[0],
+//         end_date: endDate.toISOString().split('T')[0],
+//         sort_dates_ascending: true
+//       });
+  
+//       // Check if response is successful and has data
+//       if (
+//         response.data && 
+//         'success' in response.data && 
+//         response.data.success && 
+//         'data' in response.data &&
+//         Array.isArray(response.data.data)
+//       ) {
+//         return response.data.data;
+//       }
+  
+//       console.error('No working hours data received or invalid response format');
+//       return [];
+//     } catch (error) {
+//       console.error('Error fetching working hours:', error);
+//       return [];
+//     }
+//   };
+
+//   const mapApiDataToUsers = (apiUsers: APIUser[], workingHours: WorkingHoursSummary[]): User[] => {
+//     return apiUsers.map(apiUser => {
+//       const userWorkingHours = workingHours.find(wh => wh.user_id === apiUser.user_id);
+//       const workingSummary = userWorkingHours 
+//         ? `${formatWorkingHours(userWorkingHours.total_working_hours)}/${userWorkingHours.total_working_days}days`
+//         : '0hrs/0days';
+
+//       // Provide default values for null fields
+//       const firstName = apiUser.first_name || '';
+//       const lastName = apiUser.last_name || '';
+//       const email = apiUser.email || '';
+//       const position = apiUser.position || '';
+//       const branchName = apiUser.branch_name || '';
+//       const img = apiUser.img || '';
+
+//       return {
+//         id: apiUser.user_id,
+//         name: [firstName, lastName].filter(Boolean).join(' ') || 'null',
+//         avatarUrl: img,
+//         branch: branchName,
+//         workingSummary,
+//         status: apiUser.is_working === true ? 'working' : 'offline',
+//         details: {
+//           email,
+//           position
+//         }
+//       };
+//     });
+//   };
+
+//   // Updated function to use Elysia client
+//   const fetchUsersData = async () => {
+//     try {
+//       const response = await elysia.api["users"]["all"].get();
+//       if (!response.data?.data) {
+//         console.error('No user data received');
+//         return;
+//       }
+      
+//       const apiUsers = response.data.data;
+      
+//       if (dateRange?.from && dateRange?.to) {
+//         const workingHours = await fetchWorkingHoursSummary(
+//           apiUsers.map(user => user.user_id),
+//           dateRange.from,
+//           dateRange.to
+//         );
+//         const mappedUsers = mapApiDataToUsers(apiUsers, workingHours);
+//         setUsers(mappedUsers);
+//       }
+//     } catch (error) {
+//       console.error('Error fetching users:', error);
+//     }
+//   };
 
 const AdminDashboard = () => {
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(),
-    to: new Date()
+  const [users, setUsers] = useState<User[]>([]);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    return {
+      from: firstDay,
+      to: today
+    };
   });
-  const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [expandedRows, setExpandedRows] = useState<number[]>([]);
+  const [expandedRows, setExpandedRows] = useState<string[]>([]);
 
-  // Toggle row expansion with proper typing
-  const toggleRowExpansion = (userId: number, event?: React.MouseEvent) => {
+  // Function to format working hours
+  const formatWorkingHours = (hoursStr: string): string => {
+    const [hours, minutes] = hoursStr.split(':').map(Number);
+    const totalHours = minutes >= 30 ? Math.ceil(hours) : Math.floor(hours);
+    return `${totalHours}hrs`;
+  };
+
+  // Function to fetch working hours summary
+  const fetchWorkingHoursSummary = async (userIds: string[], startDate: Date, endDate: Date) => {
+    try {
+      const response = await fetch('http://localhost:3000/api/users/working-hours-summary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_ids: userIds,
+          start_date: startDate.toISOString().split('T')[0],
+          end_date: endDate.toISOString().split('T')[0],
+          sort_dates_ascending: true
+        }),
+      });
+      const result = await response.json();
+      return result.data.data;
+    } catch (error) {
+      console.error('Error fetching working hours:', error);
+      return [];
+    }
+  };
+
+  // Function to map API data to User interface
+  const mapApiDataToUsers = (apiUsers: APIUser[], workingHours: WorkingHoursSummary[]): User[] => {
+    return apiUsers.map(apiUser => {
+      const userWorkingHours = workingHours.find(wh => wh.user_id === apiUser.user_id);
+      const workingSummary = userWorkingHours 
+        ? `${formatWorkingHours(userWorkingHours.total_working_hours)}/${userWorkingHours.total_working_days}days`
+        : '0hrs/0days';
+
+      return {
+        id: apiUser.user_id,
+        name: [apiUser.first_name, apiUser.last_name].filter(Boolean).join(' ') || 'null',
+        avatarUrl: apiUser.img,
+        branch: apiUser.branch_name,
+        workingSummary,
+        status: apiUser.is_working === true ? 'working' : 'offline',
+        details: {
+          email: apiUser.email,
+          position: apiUser.position
+        }
+      };
+    });
+  };
+
+  // Fetch users and their working hours
+  const fetchUsersData = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/users/all');
+      const result = await response.json();
+      const apiUsers = result.data;
+      
+      if (dateRange?.from && dateRange?.to) {
+        const workingHours = await fetchWorkingHoursSummary(
+          apiUsers.map((user: APIUser) => user.user_id),
+          dateRange.from,
+          dateRange.to
+        );
+        const mappedUsers = mapApiDataToUsers(apiUsers, workingHours);
+        setUsers(mappedUsers);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchUsersData();
+  }, []);
+
+  // Fetch new working hours when date range changes
+  useEffect(() => {
+    if (dateRange?.from && dateRange?.to && users.length > 0) {
+      fetchWorkingHoursSummary(
+        users.map(user => user.id),
+        dateRange.from,
+        dateRange.to
+      ).then(workingHours => {
+        const updatedUsers = mapApiDataToUsers(
+          users.map(user => ({
+            user_id: user.id,
+            employee_id: null,
+            img: user.avatarUrl,
+            first_name: user.name === 'null' ? null : user.name.split(' ')[0],
+            last_name: user.name === 'null' ? null : user.name.split(' ')[1] || null,
+            email: user.details.email,
+            branch_id: '',
+            branch_name: user.branch,
+            position: user.details.position,
+            is_working: user.status === 'working'
+          })),
+          workingHours
+        );
+        setUsers(updatedUsers);
+      });
+    }
+  }, [dateRange]);
+
+  const toggleRowExpansion = (userId: string, event?: React.MouseEvent) => {
     if (event) {
       event.stopPropagation();
     }
@@ -101,8 +330,7 @@ const AdminDashboard = () => {
     );
   };
 
-  // Toggle user selection with proper typing
-  const toggleUserSelection = (userId: number) => {
+  const toggleUserSelection = (userId: string) => {
     setSelectedUsers(prev => 
       prev.includes(userId)
         ? prev.filter(id => id !== userId)
@@ -110,10 +338,9 @@ const AdminDashboard = () => {
     );
   };
 
-  // Filter users based on search query
-  const filteredUsers = mockUsers.filter(user =>
+  const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.organization.toLowerCase().includes(searchQuery.toLowerCase())
+    user.branch.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -125,6 +352,14 @@ const AdminDashboard = () => {
           variant="outline" 
           className="flex items-center gap-2"
           disabled={selectedUsers.length === 0}
+          onClick={() => {
+            const exportData = {
+              user_ids: selectedUsers,
+              start_date: dateRange?.from?.toISOString().split('T')[0],
+              end_date: dateRange?.to?.toISOString().split('T')[0]
+            };
+            console.log("Export data:", exportData);
+          }}
         >
           <Download className="w-4 h-4" />
           Export Selected
@@ -167,12 +402,12 @@ const AdminDashboard = () => {
               <TableRow>
                 <TableHead className="w-12">
                   <Checkbox 
-                    checked={selectedUsers.length === mockUsers.length}
+                    checked={selectedUsers.length === users.length}
                     onCheckedChange={() => {
-                      if (selectedUsers.length === mockUsers.length) {
+                      if (selectedUsers.length === users.length) {
                         setSelectedUsers([]);
                       } else {
-                        setSelectedUsers(mockUsers.map(u => u.id));
+                        setSelectedUsers(users.map(u => u.id));
                       }
                     }}
                   />
@@ -208,7 +443,7 @@ const AdminDashboard = () => {
                       />
                     </TableCell>
                     <TableCell>{user.name}</TableCell>
-                    <TableCell>{user.organization}</TableCell>
+                    <TableCell>{user.branch}</TableCell>
                     <TableCell>{user.workingSummary}</TableCell>
                     <TableCell>
                       <Badge 
@@ -243,24 +478,6 @@ const AdminDashboard = () => {
                               <p className="font-medium">Position</p>
                               <p className="text-sm text-muted-foreground">{user.details.position}</p>
                             </div>
-                            {/* <div>
-                              <p className="font-medium">Department</p>
-                              <p className="text-sm text-muted-foreground">{user.details.department}</p>
-                            </div>
-                            <div>
-                              <p className="font-medium">Total Hours</p>
-                              <p className="text-sm text-muted-foreground">{user.details.totalHours}hrs</p>
-                            </div>
-                            <div className="col-span-2">
-                              <p className="font-medium">Projects</p>
-                              <div className="flex gap-2 mt-1">
-                                {user.details.projects.map(project => (
-                                  <Badge key={project} variant="outline">
-                                    {project}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div> */}
                           </div>
                         </div>
                       </TableCell>
