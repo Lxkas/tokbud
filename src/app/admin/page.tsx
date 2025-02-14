@@ -89,115 +89,6 @@ interface User {
   };
 }
 
-// const AdminDashboard = () => {
-//   const [users, setUsers] = useState<User[]>([]);
-//   const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
-//     const today = new Date();
-//     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-//     return {
-//       from: firstDay,
-//       to: today
-//     };
-//   });
-//   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-//   const [searchQuery, setSearchQuery] = useState<string>("");
-//   const [expandedRows, setExpandedRows] = useState<string[]>([]);
-
-//   // Function to format working hours
-//   const formatWorkingHours = (hoursStr: string): string => {
-//     const [hours, minutes] = hoursStr.split(':').map(Number);
-//     const totalHours = minutes >= 30 ? Math.ceil(hours) : Math.floor(hours);
-//     return `${totalHours}hrs`;
-//   };
-
-//   // Function to fetch working hours summary
-//   const fetchWorkingHoursSummary = async (
-//     userIds: string[], 
-//     startDate: Date, 
-//     endDate: Date
-//   ): Promise<WorkingHoursSummary[]> => {
-//     try {
-//       const response = await elysia.api["users"]["working-hours-summary"].post({
-//         user_ids: userIds,
-//         start_date: startDate.toISOString().split('T')[0],
-//         end_date: endDate.toISOString().split('T')[0],
-//         sort_dates_ascending: true
-//       });
-  
-//       // Check if response is successful and has data
-//       if (
-//         response.data && 
-//         'success' in response.data && 
-//         response.data.success && 
-//         'data' in response.data &&
-//         Array.isArray(response.data.data)
-//       ) {
-//         return response.data.data;
-//       }
-  
-//       console.error('No working hours data received or invalid response format');
-//       return [];
-//     } catch (error) {
-//       console.error('Error fetching working hours:', error);
-//       return [];
-//     }
-//   };
-
-//   const mapApiDataToUsers = (apiUsers: APIUser[], workingHours: WorkingHoursSummary[]): User[] => {
-//     return apiUsers.map(apiUser => {
-//       const userWorkingHours = workingHours.find(wh => wh.user_id === apiUser.user_id);
-//       const workingSummary = userWorkingHours 
-//         ? `${formatWorkingHours(userWorkingHours.total_working_hours)}/${userWorkingHours.total_working_days}days`
-//         : '0hrs/0days';
-
-//       // Provide default values for null fields
-//       const firstName = apiUser.first_name || '';
-//       const lastName = apiUser.last_name || '';
-//       const email = apiUser.email || '';
-//       const position = apiUser.position || '';
-//       const branchName = apiUser.branch_name || '';
-//       const img = apiUser.img || '';
-
-//       return {
-//         id: apiUser.user_id,
-//         name: [firstName, lastName].filter(Boolean).join(' ') || 'null',
-//         avatarUrl: img,
-//         branch: branchName,
-//         workingSummary,
-//         status: apiUser.is_working === true ? 'working' : 'offline',
-//         details: {
-//           email,
-//           position
-//         }
-//       };
-//     });
-//   };
-
-//   // Updated function to use Elysia client
-//   const fetchUsersData = async () => {
-//     try {
-//       const response = await elysia.api["users"]["all"].get();
-//       if (!response.data?.data) {
-//         console.error('No user data received');
-//         return;
-//       }
-      
-//       const apiUsers = response.data.data;
-      
-//       if (dateRange?.from && dateRange?.to) {
-//         const workingHours = await fetchWorkingHoursSummary(
-//           apiUsers.map(user => user.user_id),
-//           dateRange.from,
-//           dateRange.to
-//         );
-//         const mappedUsers = mapApiDataToUsers(apiUsers, workingHours);
-//         setUsers(mappedUsers);
-//       }
-//     } catch (error) {
-//       console.error('Error fetching users:', error);
-//     }
-//   };
-
 const AdminDashboard = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
@@ -220,29 +111,38 @@ const AdminDashboard = () => {
   };
 
   // Function to fetch working hours summary
-  const fetchWorkingHoursSummary = async (userIds: string[], startDate: Date, endDate: Date) => {
+  const fetchWorkingHoursSummary = async (
+    userIds: string[], 
+    startDate: Date, 
+    endDate: Date
+  ): Promise<WorkingHoursSummary[]> => {
     try {
-      const response = await fetch('http://localhost:3000/api/users/working-hours-summary', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_ids: userIds,
-          start_date: startDate.toISOString().split('T')[0],
-          end_date: endDate.toISOString().split('T')[0],
-          sort_dates_ascending: true
-        }),
+      const response = await elysia.api["users"]["working-hours-summary"].post({
+        user_ids: userIds,
+        start_date: startDate.toISOString().split('T')[0],
+        end_date: endDate.toISOString().split('T')[0],
+        sort_dates_ascending: true
       });
-      const result = await response.json();
-      return result.data.data;
+  
+      // Check for the nested data structure
+      if (
+        response.data?.success && 
+        response.data?.data?.status === 'success' && 
+        Array.isArray(response.data.data.data)
+      ) {
+        return response.data.data.data;
+      }
+  
+      console.error('Response structure:', response);
+      console.error('No working hours data received or invalid response format');
+      
+      return [];
     } catch (error) {
       console.error('Error fetching working hours:', error);
       return [];
     }
   };
 
-  // Function to map API data to User interface
   const mapApiDataToUsers = (apiUsers: APIUser[], workingHours: WorkingHoursSummary[]): User[] => {
     return apiUsers.map(apiUser => {
       const userWorkingHours = workingHours.find(wh => wh.user_id === apiUser.user_id);
@@ -250,41 +150,142 @@ const AdminDashboard = () => {
         ? `${formatWorkingHours(userWorkingHours.total_working_hours)}/${userWorkingHours.total_working_days}days`
         : '0hrs/0days';
 
+      // Provide default values for null fields
+      const firstName = apiUser.first_name || '';
+      const lastName = apiUser.last_name || '';
+      const email = apiUser.email || '';
+      const position = apiUser.position || '';
+      const branchName = apiUser.branch_name || '';
+      const img = apiUser.img || '';
+
       return {
         id: apiUser.user_id,
-        name: [apiUser.first_name, apiUser.last_name].filter(Boolean).join(' ') || 'null',
-        avatarUrl: apiUser.img,
-        branch: apiUser.branch_name,
+        name: [firstName, lastName].filter(Boolean).join(' ') || 'null',
+        avatarUrl: img,
+        branch: branchName,
         workingSummary,
         status: apiUser.is_working === true ? 'working' : 'offline',
         details: {
-          email: apiUser.email,
-          position: apiUser.position
+          email,
+          position
         }
       };
     });
   };
 
-  // Fetch users and their working hours
+  // Updated function to use Elysia client
   const fetchUsersData = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/users/all');
-      const result = await response.json();
-      const apiUsers = result.data;
+      const response = await elysia.api["users"]["all"].get();
+      if (!response.data?.data) {
+        console.error('No user data received');
+        return;
+      }
+      
+      const apiUsers = response.data.data;
       
       if (dateRange?.from && dateRange?.to) {
         const workingHours = await fetchWorkingHoursSummary(
-          apiUsers.map((user: APIUser) => user.user_id),
+          apiUsers.map(user => user.user_id),
           dateRange.from,
           dateRange.to
         );
         const mappedUsers = mapApiDataToUsers(apiUsers, workingHours);
+        console.error(mappedUsers)
         setUsers(mappedUsers);
       }
     } catch (error) {
       console.error('Error fetching users:', error);
     }
   };
+
+// const AdminDashboard = () => {
+//   const [users, setUsers] = useState<User[]>([]);
+//   const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+//     const today = new Date();
+//     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+//     return {
+//       from: firstDay,
+//       to: today
+//     };
+//   });
+//   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+//   const [searchQuery, setSearchQuery] = useState<string>("");
+//   const [expandedRows, setExpandedRows] = useState<string[]>([]);
+
+//   // Function to format working hours
+//   const formatWorkingHours = (hoursStr: string): string => {
+//     const [hours, minutes] = hoursStr.split(':').map(Number);
+//     const totalHours = minutes >= 30 ? Math.ceil(hours) : Math.floor(hours);
+//     return `${totalHours}hrs`;
+//   };
+
+//   // Function to fetch working hours summary
+//   const fetchWorkingHoursSummary = async (userIds: string[], startDate: Date, endDate: Date) => {
+//     try {
+//       const response = await fetch('http://localhost:3000/api/users/working-hours-summary', {
+//         method: 'POST',
+//         headers: {
+//           'Content-Type': 'application/json',
+//         },
+//         body: JSON.stringify({
+//           user_ids: userIds,
+//           start_date: startDate.toISOString().split('T')[0],
+//           end_date: endDate.toISOString().split('T')[0],
+//           sort_dates_ascending: true
+//         }),
+//       });
+//       const result = await response.json();
+//       return result.data.data;
+//     } catch (error) {
+//       console.error('Error fetching working hours:', error);
+//       return [];
+//     }
+//   };
+
+//   // Function to map API data to User interface
+//   const mapApiDataToUsers = (apiUsers: APIUser[], workingHours: WorkingHoursSummary[]): User[] => {
+//     return apiUsers.map(apiUser => {
+//       const userWorkingHours = workingHours.find(wh => wh.user_id === apiUser.user_id);
+//       const workingSummary = userWorkingHours 
+//         ? `${formatWorkingHours(userWorkingHours.total_working_hours)}/${userWorkingHours.total_working_days}days`
+//         : '0hrs/0days';
+
+//       return {
+//         id: apiUser.user_id,
+//         name: [apiUser.first_name, apiUser.last_name].filter(Boolean).join(' ') || 'null',
+//         avatarUrl: apiUser.img,
+//         branch: apiUser.branch_name,
+//         workingSummary,
+//         status: apiUser.is_working === true ? 'working' : 'offline',
+//         details: {
+//           email: apiUser.email,
+//           position: apiUser.position
+//         }
+//       };
+//     });
+//   };
+
+//   // Fetch users and their working hours
+//   const fetchUsersData = async () => {
+//     try {
+//       const response = await fetch('http://localhost:3000/api/users/all');
+//       const result = await response.json();
+//       const apiUsers = result.data;
+      
+//       if (dateRange?.from && dateRange?.to) {
+//         const workingHours = await fetchWorkingHoursSummary(
+//           apiUsers.map((user: APIUser) => user.user_id),
+//           dateRange.from,
+//           dateRange.to
+//         );
+//         const mappedUsers = mapApiDataToUsers(apiUsers, workingHours);
+//         setUsers(mappedUsers);
+//       }
+//     } catch (error) {
+//       console.error('Error fetching users:', error);
+//     }
+//   };
 
   // Initial data fetch
   useEffect(() => {
