@@ -30,7 +30,6 @@ import {
   Circle 
 } from "lucide-react";
 
-
 // Define interfaces for API responses and data types
 interface WorkingHoursSummaryResponse {
   success: boolean;
@@ -104,30 +103,44 @@ interface WorkingHoursShift {
   change_history: string[];
 }
 
-interface WorkingHoursDay {
-  date: string;
-  "on-site": WorkingHoursShift[];
-  overtime: WorkingHoursShift[];
+interface ExportedShift {
+  doc_id: string;
+  start: string;
+  end: string;
+  start_official: string;
+  end_official: string;
+  duration: string;
+  duration_official: string;
+  reason: string;
+  change_history: string[];
 }
 
-interface WorkingHoursExportData {
+interface ExportedDayShift {
+  date: string;
+  shifts: ExportedShift[];
+}
+
+interface ExportedUserWorkingHour {
   user_id: string;
   org_id: string;
-  all_shift: WorkingHoursDay[];
+  all_shift: ExportedDayShift[];
+}
+
+interface WorkingHoursExportData extends ExportedUserWorkingHour {
+  user_info?: User;
 }
 
 interface ExportedWorkingHourSuccessResponse {
   status: "ok";
-  data: WorkingHoursExportData[];
+  data: ExportedUserWorkingHour[];
 }
 
 interface ExportedWorkingHourErrorResponse {
-  status: string;
+  status: "error";
   message: string;
 }
 
 type ExportedWorkingHourResponse = ExportedWorkingHourSuccessResponse | ExportedWorkingHourErrorResponse;
-
 
 const AdminDashboard = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -244,13 +257,14 @@ const AdminDashboard = () => {
   const fetchUserWorkingHoursExport = async (
     userId: string,
     startDate: string,
-    endDate: string
-  ) => {
+    endDate: string,
+    session: any
+  ): Promise<ExportedUserWorkingHour | null> => {
     const jwt = await session?.getToken({ template: "Auth" });
-		if (!jwt) return;
-
-		setCookie("auth", jwt);
-
+    if (!jwt) return null;
+  
+    setCookie("auth", jwt);
+  
     try {
       const response = await elysia.api["working-hours"]["export"].get({
         query: {
@@ -261,17 +275,21 @@ const AdminDashboard = () => {
           sort_shifts_ascending: true
         }
       });
-      
+  
       if (!response.data) {
         console.error("No response data received");
         return null;
       }
   
-      // Type guard to check if it's a success response
-      if (response.data.status === "ok" && "data" in response.data) {
+      // Type guard to check if response has data array
+      const hasDataArray = (resp: any): resp is { status: string; data: ExportedUserWorkingHour[] } => {
+        return Array.isArray(resp.data);
+      };
+  
+      if (hasDataArray(response.data) && response.data.data.length > 0) {
         return response.data.data[0];
       }
-      
+  
       console.error("Invalid response format or empty data");
       return null;
     } catch (error) {
@@ -337,6 +355,69 @@ const AdminDashboard = () => {
     user.branch.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleExport = async () => {
+    const startDate = dateRange?.from?.toISOString().split('T')[0];
+    const endDate = dateRange?.to?.toISOString().split('T')[0];
+    
+    if (!startDate || !endDate) {
+      console.error("Date range is not properly set");
+      return;
+    }
+  
+    try {
+      // Get the currently filtered/displayed users
+      const selectedUserData = users.filter(user => selectedUsers.includes(user.id));
+  
+      // Fetch data for all selected users
+      const exportPromises = selectedUsers.map(async userId => {
+        const exportData = await fetchUserWorkingHoursExport(userId, startDate, endDate, session);
+        if (!exportData) return null;
+  
+        // Find the corresponding user data
+        const userData = selectedUserData.find(user => user.id === userId);
+        if (!userData) return exportData;
+  
+        // Merge export data with user information
+        return {
+          ...exportData,
+          user_info: {
+            id: userData.id,
+            name: userData.name,
+            avatarUrl: userData.avatarUrl,
+            branch: userData.branch,
+            workingSummary: userData.workingSummary,
+            status: userData.status,
+            details: userData.details
+          }
+        };
+      });
+  
+      const results = await Promise.all(exportPromises);
+      
+      // Filter out null results and combine into array
+      const combinedData = results.filter((result): result is (ExportedUserWorkingHour & { user_info?: User }) => 
+        result !== null
+      );
+      
+      console.log("Combined export data:", combinedData);
+      
+      // Here you can handle the exported data as needed
+      // For example, download as JSON file
+      const blob = new Blob([JSON.stringify(combinedData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `working-hours-export-${startDate}-to-${endDate}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      console.error("Error exporting data:", error);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header Section */}
@@ -346,39 +427,7 @@ const AdminDashboard = () => {
           variant="outline" 
           className="flex items-center gap-2"
           disabled={selectedUsers.length === 0}
-          onClick={async () => {
-            const startDate = dateRange?.from?.toISOString().split('T')[0];
-            const endDate = dateRange?.to?.toISOString().split('T')[0];
-            
-            if (!startDate || !endDate) {
-              console.error("Date range is not properly set");
-              return;
-            }
-
-            try {
-              // Show loading state if needed
-              // setIsLoading(true);
-
-              // Fetch data for all selected users
-              const exportPromises = selectedUsers.map(userId =>
-                fetchUserWorkingHoursExport(userId, startDate, endDate)
-              );
-
-              const results = await Promise.all(exportPromises);
-              
-              // Filter out null results and combine into array
-              const combinedData = results.filter(result => result !== null);
-              console.log("Combined export data:", combinedData);
-              
-              // Here you can handle the combined data as needed
-              // For example, download it as a file, show in UI, etc.
-            } catch (error) {
-              console.error("Error exporting data:", error);
-            } finally {
-              // Hide loading state if needed
-              // setIsLoading(false);
-            }
-          }}
+          onClick={handleExport}
         >
           <Download className="w-4 h-4" />
           Export Selected
