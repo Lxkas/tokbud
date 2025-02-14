@@ -253,7 +253,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // Add this function inside your AdminDashboard component
   const fetchUserWorkingHoursExport = async (
     userId: string,
     startDate: string,
@@ -375,34 +374,37 @@ const AdminDashboard = () => {
   
         // Find the corresponding user data
         const userData = selectedUserData.find(user => user.id === userId);
-        if (!userData) return exportData;
-  
-        // Merge export data with user information
+        if (!userData) return null;
+
+        // Validate user IDs match
+        if (userData.id !== exportData.user_id) {
+          console.error(`User ID mismatch for user ${userData.id}`);
+          return null;
+        }
+
+        // Restructure the data with user info at the same level as all_shift
         return {
-          ...exportData,
-          user_info: {
-            id: userData.id,
-            name: userData.name,
-            avatarUrl: userData.avatarUrl,
-            branch: userData.branch,
-            workingSummary: userData.workingSummary,
-            status: userData.status,
-            details: userData.details
-          }
+          user_id: userData.id,
+          org_id: exportData.org_id,
+          name: userData.name,
+          avatarUrl: userData.avatarUrl,
+          branch: userData.branch,
+          workingSummary: userData.workingSummary,
+          status: userData.status,
+          email: userData.details.email,
+          position: userData.details.position,
+          all_shift: exportData.all_shift
         };
       });
   
       const results = await Promise.all(exportPromises);
       
-      // Filter out null results and combine into array
-      const combinedData = results.filter((result): result is (ExportedUserWorkingHour & { user_info?: User }) => 
-        result !== null
-      );
+      // Filter out null results
+      const combinedData = results.filter((result): result is any => result !== null);
       
       console.log("Combined export data:", combinedData);
       
-      // Here you can handle the exported data as needed
-      // For example, download as JSON file
+      // Download as JSON file
       const blob = new Blob([JSON.stringify(combinedData, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
