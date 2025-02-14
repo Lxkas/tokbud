@@ -1,6 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useTransition } from "react";
+import { useSession } from "@clerk/nextjs";
+import { elysia } from "@/elysia/client";
+import { setCookie } from "cookies-next";
+import { WorkingHourResponse } from "@/elysia/types/working-hours";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,149 +14,182 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, parseISO } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
-interface Shift {
-	id: string;
-	name: string;
-	startTime: string;
-	endTime: string;
+interface TimeInfo {
+	shift_time: string;
+	timestamp: string;
+	image_url: string;
+	lat: number;
+	lon: number;
 }
 
-interface ClockEvent {
-	id: string;
-	type: "in" | "out";
-	timestamp: Date;
-	userId: string;
-	shiftId: string;
+interface TimeRecordDoc {
+	date: string;
+	user_id: string;
+	org_id: string;
+	shift_type: string;
+	is_complete: boolean;
+	reason: string;
+	start_time: TimeInfo;
+	end_time: TimeInfo | null;
+	change_log: any[];
 }
 
 interface EditRecord {
 	id: string;
 	eventId: string;
-	oldTimestamp: Date;
-	newTimestamp: Date;
-	editedAt: Date;
+	oldTimestamp: string;
+	newTimestamp: string;
+	editedAt: string;
 }
 
 export default function EditTimePage() {
-	const [shifts, setShifts] = useState<Shift[]>([
-		{ id: "1", name: "Morning Shift", startTime: "06:00", endTime: "14:00" },
-		{ id: "2", name: "Afternoon Shift", startTime: "14:00", endTime: "22:00" },
-		{ id: "3", name: "Night Shift", startTime: "22:00", endTime: "06:00" },
-	]);
-
-	const [clockEvents, setClockEvents] = useState<ClockEvent[]>([
-		{ id: "1", type: "in", timestamp: new Date("2023-05-01T06:00:00"), userId: "user1", shiftId: "1" },
-		{ id: "2", type: "out", timestamp: new Date("2023-05-01T14:00:00"), userId: "user1", shiftId: "1" },
-		{ id: "3", type: "in", timestamp: new Date("2023-05-01T14:00:00"), userId: "user2", shiftId: "2" },
-		{ id: "4", type: "out", timestamp: new Date("2023-05-01T22:00:00"), userId: "user2", shiftId: "2" },
-	]);
-
+	const [timeRecords, setTimeRecords] = useState<TimeRecordDoc[]>([]);
 	const [editRecords, setEditRecords] = useState<EditRecord[]>([]);
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+	const [isPending, startTransition] = useTransition();
+	const { isSignedIn, session } = useSession();
 
-	const [newShift, setNewShift] = useState<Omit<Shift, "id">>({ name: "", startTime: "", endTime: "" });
-
-	const handleAddShift = () => {
-		if (newShift.name && newShift.startTime && newShift.endTime) {
-			setShifts([...shifts, { ...newShift, id: Date.now().toString() }]);
-			setNewShift({ name: "", startTime: "", endTime: "" });
+	useEffect(() => {
+		if (!isSignedIn) {
+			setTimeRecords([]);
+			setEditRecords([]);
+			return;
 		}
-	};
 
-	const handleDeleteShift = (id: string) => {
-		setShifts(shifts.filter((shift) => shift.id !== id));
-	};
+		fetchTimeRecords().catch((err) => {
+			console.error("Failed to fetch time records:", err);
+			setError("Failed to load time records");
+		});
+	}, [isSignedIn]);
 
-	const handleDeleteClockEvent = (id: string) => {
-		setClockEvents(clockEvents.filter((event) => event.id !== id));
-	};
+	async function fetchTimeRecords() {
+		try {
+			setLoading(true);
+			const jwt = await session?.getToken({ template: "Auth" });
+			if (!jwt) return;
 
-	const handleEditClockEvent = (id: string, newTimestamp: string) => {
-		const eventToEdit = clockEvents.find((event) => event.id === id);
-		if (eventToEdit) {
-			const oldTimestamp = eventToEdit.timestamp;
-			const updatedTimestamp = parseISO(newTimestamp);
+			setCookie("auth", jwt);
 
-			setClockEvents(
-				clockEvents.map((event) => (event.id === id ? { ...event, timestamp: updatedTimestamp } : event)),
+			const today = format(new Date(), "yyyy-MM-dd");
+			const response = await elysia.api["working-hours"]["detail"].get({
+				query: {
+					start_date: today,
+					end_date: today,
+				},
+			});
+
+			if (!response.data) {
+				console.error("No data from /working-hours/detail:", response);
+				return;
+			}
+
+			const result = response.data as WorkingHourResponse;
+			if (result.status === "error") {
+				throw new Error("Failed to fetch time records");
+			}
+
+			const allRecords = result.data || [];
+
+			if (allRecords.length > 0 && allRecords[0].all_shift) {
+				const timeRecords = allRecords[0].all_shift.flatMap((day: any) =>
+					(day.shift || []).map((shift: any) => ({
+						date: day.date,
+						user_id: shift.user_id,
+						org_id: shift.org_id,
+						shift_type: shift.shift_type,
+						is_complete: shift.is_complete,
+						reason: shift.reason,
+						start_time: shift.start_time,
+						end_time: shift.end_time,
+						change_log: shift.change_log || [],
+					})),
+				);
+				setTimeRecords(timeRecords);
+			}
+		} finally {
+			setLoading(false);
+		}
+	}
+
+	const handleEditTimeRecord = async (docId: string, newTimestamp: string, isStartTime: boolean) => {
+		if (!isSignedIn) {
+			setError("Please sign in to edit time records");
+			return;
+		}
+
+		try {
+			startTransition(() => {
+				setLoading(true);
+				setError(null);
+			});
+
+			const jwt = await session?.getToken({ template: "Auth" });
+			if (!jwt) {
+				throw new Error("No valid token found. Please sign in again.");
+			}
+
+			setCookie("auth", jwt);
+
+			const response = await elysia.api["time-record-2"].edit.put({
+				document_id: docId,
+				edit_reason: "Manual time edit",
+				lat: 0,
+				lon: 0,
+				...(isStartTime
+					? {
+							official_start_time: newTimestamp,
+						}
+					: {
+							official_end_time: newTimestamp,
+						}),
+			});
+
+			if (!response.data) {
+				throw new Error("Failed to edit time record");
+			}
+
+			// Update local state
+			setTimeRecords((prevRecords) =>
+				prevRecords.map((record) => {
+					if (record.date === docId) {
+						const updatedRecord = { ...record };
+						if (isStartTime) {
+							updatedRecord.start_time.shift_time = newTimestamp;
+						} else if (updatedRecord.end_time) {
+							updatedRecord.end_time.shift_time = newTimestamp;
+						}
+						return updatedRecord;
+					}
+					return record;
+				}),
 			);
 
+			// Add to edit history
 			const newEditRecord: EditRecord = {
 				id: Date.now().toString(),
-				eventId: id,
-				oldTimestamp,
-				newTimestamp: updatedTimestamp,
-				editedAt: new Date(),
+				eventId: docId,
+				oldTimestamp: isStartTime
+					? timeRecords.find((r) => r.date === docId)?.start_time.shift_time || ""
+					: timeRecords.find((r) => r.date === docId)?.end_time?.shift_time || "",
+				newTimestamp,
+				editedAt: new Date().toISOString(),
 			};
 
-			setEditRecords([...editRecords, newEditRecord]);
+			setEditRecords((prev) => [...prev, newEditRecord]);
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "An error occurred");
+		} finally {
+			setLoading(false);
 		}
 	};
 
 	return (
 		<Tabs defaultValue="shifts" className="w-full">
 			<TabsList>
-				<TabsTrigger value="shifts">Shifts</TabsTrigger>
-				<TabsTrigger value="clockEvents">Clock Events</TabsTrigger>
+				<TabsTrigger value="clockEvents">Time Records</TabsTrigger>
 				<TabsTrigger value="editHistory">Edit History</TabsTrigger>
 			</TabsList>
-			<TabsContent value="shifts">
-				<Card>
-					<CardHeader>
-						<CardTitle>Manage Shifts</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-							<Input
-								placeholder="Shift Name"
-								value={newShift.name}
-								onChange={(e) => setNewShift({ ...newShift, name: e.target.value })}
-							/>
-							<Input
-								type="time"
-								placeholder="Start Time"
-								value={newShift.startTime}
-								onChange={(e) => setNewShift({ ...newShift, startTime: e.target.value })}
-							/>
-							<Input
-								type="time"
-								placeholder="End Time"
-								value={newShift.endTime}
-								onChange={(e) => setNewShift({ ...newShift, endTime: e.target.value })}
-							/>
-							<Button onClick={handleAddShift}>Add Shift</Button>
-						</div>
-						<ScrollArea className="h-[300px] w-full rounded-md border">
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>Name</TableHead>
-										<TableHead>Start Time</TableHead>
-										<TableHead>End Time</TableHead>
-										<TableHead>Actions</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{shifts.map((shift) => (
-										<TableRow key={shift.id}>
-											<TableCell>{shift.name}</TableCell>
-											<TableCell>{shift.startTime}</TableCell>
-											<TableCell>{shift.endTime}</TableCell>
-											<TableCell>
-												<Button
-													variant="destructive"
-													onClick={() => handleDeleteShift(shift.id)}
-												>
-													Delete
-												</Button>
-											</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</ScrollArea>
-					</CardContent>
-				</Card>
-			</TabsContent>
 			<TabsContent value="clockEvents">
 				<Card>
 					<CardHeader>
@@ -171,39 +208,69 @@ export default function EditTimePage() {
 									</TableRow>
 								</TableHeader>
 								<TableBody>
-									{clockEvents.map((event) => (
-										<TableRow key={event.id}>
-											<TableCell>{event.userId}</TableCell>
-											<TableCell>{event.type}</TableCell>
+									{timeRecords.map((record) => (
+										<TableRow key={record.date}>
+											<TableCell>{record.user_id}</TableCell>
+											<TableCell>{record.shift_type}</TableCell>
 											<TableCell>
 												<Dialog>
 													<DialogTrigger asChild>
 														<Button variant="outline">
-															{format(event.timestamp, "yyyy-MM-dd HH:mm:ss")}
+															{format(
+																parseISO(record.start_time.shift_time),
+																"yyyy-MM-dd HH:mm:ss",
+															)}
 														</Button>
 													</DialogTrigger>
 													<DialogContent>
 														<DialogHeader>
-															<DialogTitle>Edit Timestamp</DialogTitle>
+															<DialogTitle>Edit Start Time</DialogTitle>
 														</DialogHeader>
 														<Input
 															type="datetime-local"
-															defaultValue={format(event.timestamp, "yyyy-MM-dd'T'HH:mm")}
+															defaultValue={format(
+																parseISO(record.start_time.shift_time),
+																"yyyy-MM-dd'T'HH:mm",
+															)}
 															onChange={(e) =>
-																handleEditClockEvent(event.id, e.target.value)
+																handleEditTimeRecord(record.date, e.target.value, true)
 															}
 														/>
 													</DialogContent>
 												</Dialog>
 											</TableCell>
-											<TableCell>{event.shiftId}</TableCell>
 											<TableCell>
-												<Button
-													variant="destructive"
-													onClick={() => handleDeleteClockEvent(event.id)}
-												>
-													Delete
-												</Button>
+												{record.end_time && (
+													<Dialog>
+														<DialogTrigger asChild>
+															<Button variant="outline">
+																{format(
+																	parseISO(record.end_time.shift_time),
+																	"yyyy-MM-dd HH:mm:ss",
+																)}
+															</Button>
+														</DialogTrigger>
+														<DialogContent>
+															<DialogHeader>
+																<DialogTitle>Edit End Time</DialogTitle>
+															</DialogHeader>
+															<Input
+																type="datetime-local"
+																defaultValue={format(
+																	parseISO(record.end_time.shift_time),
+																	"yyyy-MM-dd'T'HH:mm",
+																)}
+																onChange={(e) =>
+																	handleEditTimeRecord(
+																		record.date,
+																		e.target.value,
+																		false,
+																	)
+																}
+															/>
+														</DialogContent>
+													</Dialog>
+												)}
 											</TableCell>
 										</TableRow>
 									))}
@@ -233,9 +300,15 @@ export default function EditTimePage() {
 									{editRecords.map((record) => (
 										<TableRow key={record.id}>
 											<TableCell>{record.eventId}</TableCell>
-											<TableCell>{format(record.oldTimestamp, "yyyy-MM-dd HH:mm:ss")}</TableCell>
-											<TableCell>{format(record.newTimestamp, "yyyy-MM-dd HH:mm:ss")}</TableCell>
-											<TableCell>{format(record.editedAt, "yyyy-MM-dd HH:mm:ss")}</TableCell>
+											<TableCell>
+												{format(parseISO(record.oldTimestamp), "yyyy-MM-dd HH:mm:ss")}
+											</TableCell>
+											<TableCell>
+												{format(parseISO(record.newTimestamp), "yyyy-MM-dd HH:mm:ss")}
+											</TableCell>
+											<TableCell>
+												{format(parseISO(record.editedAt), "yyyy-MM-dd HH:mm:ss")}
+											</TableCell>
 										</TableRow>
 									))}
 								</TableBody>
