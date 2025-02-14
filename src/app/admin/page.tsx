@@ -1,5 +1,7 @@
 "use client";
 import { elysia } from "@/elysia/client";
+import { setCookie } from 'cookies-next';
+import { useSession } from "@clerk/nextjs";
 import React, { useState, useEffect } from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,7 @@ import {
   ChevronDown, 
   Circle 
 } from "lucide-react";
+
 
 // Define interfaces for API responses and data types
 interface WorkingHoursSummaryResponse {
@@ -89,6 +92,43 @@ interface User {
   };
 }
 
+interface WorkingHoursShift {
+  doc_id: string;
+  start: string;
+  end: string;
+  start_official: string;
+  end_official: string;
+  duration: string;
+  duration_official: string;
+  reason: string;
+  change_history: string[];
+}
+
+interface WorkingHoursDay {
+  date: string;
+  "on-site": WorkingHoursShift[];
+  overtime: WorkingHoursShift[];
+}
+
+interface WorkingHoursExportData {
+  user_id: string;
+  org_id: string;
+  all_shift: WorkingHoursDay[];
+}
+
+interface ExportedWorkingHourSuccessResponse {
+  status: "ok";
+  data: WorkingHoursExportData[];
+}
+
+interface ExportedWorkingHourErrorResponse {
+  status: string;
+  message: string;
+}
+
+type ExportedWorkingHourResponse = ExportedWorkingHourSuccessResponse | ExportedWorkingHourErrorResponse;
+
+
 const AdminDashboard = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
@@ -102,6 +142,7 @@ const AdminDashboard = () => {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
+  const { isSignedIn, session } = useSession();
 
   // Function to format working hours
   const formatWorkingHours = (hoursStr: string): string => {
@@ -191,7 +232,7 @@ const AdminDashboard = () => {
           dateRange.to
         );
         const mappedUsers = mapApiDataToUsers(apiUsers, workingHours);
-        console.error(mappedUsers)
+        
         setUsers(mappedUsers);
       }
     } catch (error) {
@@ -199,93 +240,45 @@ const AdminDashboard = () => {
     }
   };
 
-// const AdminDashboard = () => {
-//   const [users, setUsers] = useState<User[]>([]);
-//   const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
-//     const today = new Date();
-//     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-//     return {
-//       from: firstDay,
-//       to: today
-//     };
-//   });
-//   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-//   const [searchQuery, setSearchQuery] = useState<string>("");
-//   const [expandedRows, setExpandedRows] = useState<string[]>([]);
+  // Add this function inside your AdminDashboard component
+  const fetchUserWorkingHoursExport = async (
+    userId: string,
+    startDate: string,
+    endDate: string
+  ) => {
+    const jwt = await session?.getToken({ template: "Auth" });
+		if (!jwt) return;
 
-//   // Function to format working hours
-//   const formatWorkingHours = (hoursStr: string): string => {
-//     const [hours, minutes] = hoursStr.split(':').map(Number);
-//     const totalHours = minutes >= 30 ? Math.ceil(hours) : Math.floor(hours);
-//     return `${totalHours}hrs`;
-//   };
+		setCookie("auth", jwt);
 
-//   // Function to fetch working hours summary
-//   const fetchWorkingHoursSummary = async (userIds: string[], startDate: Date, endDate: Date) => {
-//     try {
-//       const response = await fetch('http://localhost:3000/api/users/working-hours-summary', {
-//         method: 'POST',
-//         headers: {
-//           'Content-Type': 'application/json',
-//         },
-//         body: JSON.stringify({
-//           user_ids: userIds,
-//           start_date: startDate.toISOString().split('T')[0],
-//           end_date: endDate.toISOString().split('T')[0],
-//           sort_dates_ascending: true
-//         }),
-//       });
-//       const result = await response.json();
-//       return result.data.data;
-//     } catch (error) {
-//       console.error('Error fetching working hours:', error);
-//       return [];
-//     }
-//   };
-
-//   // Function to map API data to User interface
-//   const mapApiDataToUsers = (apiUsers: APIUser[], workingHours: WorkingHoursSummary[]): User[] => {
-//     return apiUsers.map(apiUser => {
-//       const userWorkingHours = workingHours.find(wh => wh.user_id === apiUser.user_id);
-//       const workingSummary = userWorkingHours 
-//         ? `${formatWorkingHours(userWorkingHours.total_working_hours)}/${userWorkingHours.total_working_days}days`
-//         : '0hrs/0days';
-
-//       return {
-//         id: apiUser.user_id,
-//         name: [apiUser.first_name, apiUser.last_name].filter(Boolean).join(' ') || 'null',
-//         avatarUrl: apiUser.img,
-//         branch: apiUser.branch_name,
-//         workingSummary,
-//         status: apiUser.is_working === true ? 'working' : 'offline',
-//         details: {
-//           email: apiUser.email,
-//           position: apiUser.position
-//         }
-//       };
-//     });
-//   };
-
-//   // Fetch users and their working hours
-//   const fetchUsersData = async () => {
-//     try {
-//       const response = await fetch('http://localhost:3000/api/users/all');
-//       const result = await response.json();
-//       const apiUsers = result.data;
+    try {
+      const response = await elysia.api["working-hours"]["export"].get({
+        query: {
+          user_id: userId,
+          start_date: startDate,
+          end_date: endDate,
+          sort_dates_ascending: true,
+          sort_shifts_ascending: true
+        }
+      });
       
-//       if (dateRange?.from && dateRange?.to) {
-//         const workingHours = await fetchWorkingHoursSummary(
-//           apiUsers.map((user: APIUser) => user.user_id),
-//           dateRange.from,
-//           dateRange.to
-//         );
-//         const mappedUsers = mapApiDataToUsers(apiUsers, workingHours);
-//         setUsers(mappedUsers);
-//       }
-//     } catch (error) {
-//       console.error('Error fetching users:', error);
-//     }
-//   };
+      if (!response.data) {
+        console.error("No response data received");
+        return null;
+      }
+  
+      // Type guard to check if it's a success response
+      if (response.data.status === "ok" && "data" in response.data) {
+        return response.data.data[0];
+      }
+      
+      console.error("Invalid response format or empty data");
+      return null;
+    } catch (error) {
+      console.error(`Error fetching export data for user ${userId}:`, error);
+      return null;
+    }
+  };
 
   // Initial data fetch
   useEffect(() => {
@@ -353,13 +346,38 @@ const AdminDashboard = () => {
           variant="outline" 
           className="flex items-center gap-2"
           disabled={selectedUsers.length === 0}
-          onClick={() => {
-            const exportData = {
-              user_ids: selectedUsers,
-              start_date: dateRange?.from?.toISOString().split('T')[0],
-              end_date: dateRange?.to?.toISOString().split('T')[0]
-            };
-            console.log("Export data:", exportData);
+          onClick={async () => {
+            const startDate = dateRange?.from?.toISOString().split('T')[0];
+            const endDate = dateRange?.to?.toISOString().split('T')[0];
+            
+            if (!startDate || !endDate) {
+              console.error("Date range is not properly set");
+              return;
+            }
+
+            try {
+              // Show loading state if needed
+              // setIsLoading(true);
+
+              // Fetch data for all selected users
+              const exportPromises = selectedUsers.map(userId =>
+                fetchUserWorkingHoursExport(userId, startDate, endDate)
+              );
+
+              const results = await Promise.all(exportPromises);
+              
+              // Filter out null results and combine into array
+              const combinedData = results.filter(result => result !== null);
+              console.log("Combined export data:", combinedData);
+              
+              // Here you can handle the combined data as needed
+              // For example, download it as a file, show in UI, etc.
+            } catch (error) {
+              console.error("Error exporting data:", error);
+            } finally {
+              // Hide loading state if needed
+              // setIsLoading(false);
+            }
           }}
         >
           <Download className="w-4 h-4" />
