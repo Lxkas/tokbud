@@ -1,0 +1,1201 @@
+[
+  {
+    "user_id": "user_2srDWveiLNfK82G9cafoYiFk2QQ",
+    "org_id": "org_2riGD6KpA4GTWNhTGRxCMhjpQiS",
+    "name": "😺",
+    "avatarUrl": "https://img.clerk.com/eyJ0eXBlIjoicHJveHkiLCJzcmMiOiJodHRwczovL2ltYWdlcy5jbGVyay5kZXYvb2F1dGhfbGluZS9pbWdfMnNyRFdxQ3RRSzhRbVJpOVlkVUpZV1E4YWVhIn0",
+    "branch": "Branch B",
+    "workingSummary": "0hrs/1days",
+    "status": "offline",
+    "email": "nunmanasm@gmail.com",
+    "position": "IT",
+    "all_shift": [
+      {
+        "date": "2025-02-11",
+        "on-site": [
+          {
+            "doc_id": "OET08JQBJCFmnk-it-Iv",
+            "message": "This shift is incomplete and cannot be calculated for summary"
+          }
+        ],
+        "wfh": [
+          {
+            "doc_id": "OkT18JQBJCFmnk-iX-Ke",
+            "start": "00:43",
+            "end": "00:43",
+            "start_official": "00:43",
+            "end_official": "00:43",
+            "duration": "00:00:11",
+            "duration_official": "00:00:12",
+            "reason": "No reason provided",
+            "change_history": []
+          },
+          {
+            "doc_id": "O0T18JQBJCFmnk-iwOLT",
+            "start": "00:43",
+            "end": "00:51",
+            "start_official": "00:43",
+            "end_official": "00:51",
+            "duration": "00:08:09",
+            "duration_official": "00:08:09",
+            "reason": "No reason provided",
+            "change_history": []
+          },
+          {
+            "doc_id": "PET98JQBJCFmnk-ibOKW",
+            "start": "00:52",
+            "end": "00:52",
+            "start_official": "00:52",
+            "end_official": "00:52",
+            "duration": "00:00:15",
+            "duration_official": "00:00:15",
+            "reason": "No reason provided",
+            "change_history": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "user_id": "user_2srDR9L3cGp4cMwoHChzmGSW6FD",
+    "org_id": "org_2riGCGwJV4T5JwxLOFajkNqc03U",
+    "name": "Chinathaipan 🐬",
+    "avatarUrl": "https://img.clerk.com/eyJ0eXBlIjoicHJveHkiLCJzcmMiOiJodHRwczovL2ltYWdlcy5jbGVyay5kZXYvb2F1dGhfbGluZS9pbWdfMnNyRFI0V2xkTko2WjEzbnlhcDJDc2NOdjdVIn0",
+    "branch": "Branch A",
+    "workingSummary": "6hrs/2days",
+    "status": "offline",
+    "email": "cartoonabe@gmail.com",
+    "position": "",
+    "all_shift": [
+      {
+        "date": "2025-02-02",
+        "overtime": [
+          {
+            "doc_id": "9M85-5QByn4F19N9AI4v",
+            "start": "00:33",
+            "end": "00:33",
+            "start_official": "21:30",
+            "end_official": "02:45",
+            "duration": "00:00:11",
+            "duration_official": "05:15:00",
+            "reason": "[USER] working for OT",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-02-11",
+        "on-site": [
+          {
+            "doc_id": "OUT18JQBJCFmnk-iKuLZ",
+            "start": "00:43",
+            "end": "01:34",
+            "start_official": "00:43",
+            "end_official": "01:34",
+            "duration": "00:51:46",
+            "duration_official": "00:51:46",
+            "reason": "No reason provided",
+            "change_history": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "user_id": "user_2sZiSwg8vtclo9Axc2FdwBWxVPq",
+    "org_id": "org_2riGCGwJV4T5JwxLOFajkNqc03U",
+    "name": "Naris",
+    "avatarUrl": "https://img.clerk.com/eyJ0eXBlIjoicHJveHkiLCJzcmMiOiJodHRwczovL2ltYWdlcy5jbGVyay5kZXYvb2F1dGhfbGluZS9pbWdfMnNaaVN0TE8xQ0FFSTRtNXlEZ01VQk82VEVJIn0",
+    "branch": "Branch A",
+    "workingSummary": "0hrs/1days",
+    "status": "offline",
+    "email": "narislyoko@gmail.com",
+    "position": "",
+    "all_shift": [
+      {
+        "date": "2025-02-14",
+        "on-site": [
+          {
+            "doc_id": "P0RjBJUBJCFmnk-ireL2",
+            "start": "19:16",
+            "end": "19:17",
+            "start_official": "19:16",
+            "end_official": "19:17",
+            "duration": "00:00:34",
+            "duration_official": "00:00:35",
+            "reason": "No reason provided",
+            "change_history": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "user_id": "user_2rkKh0dgkzfzB3taTyy1KsRxorW",
+    "org_id": "org_2riGD6KpA4GTWNhTGRxCMhjpQiS",
+    "name": "null",
+    "avatarUrl": "https://img.clerk.com/eyJ0eXBlIjoiZGVmYXVsdCIsImlpZCI6Imluc18ycmhrN1NSbmdycWNNck5xbW9CUnlFZU9SZkoiLCJyaWQiOiJ1c2VyXzJya0toMGRna3pmekIzdGFUeXkxS3NSeG9yVyJ9",
+    "branch": "Branch B",
+    "workingSummary": "9hrs/1days",
+    "status": "working",
+    "email": "test4@example.com",
+    "position": "IT",
+    "all_shift": [
+      {
+        "date": "2025-02-02",
+        "overtime": [
+          {
+            "doc_id": "p7KU_5QB27-qGM9003tX",
+            "start": "20:52",
+            "end": "20:52",
+            "start_official": "17:30",
+            "end_official": "02:45",
+            "duration": "00:00:14",
+            "duration_official": "09:15:00",
+            "reason": "[USER] working for OT",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-02-03",
+        "overtime": [
+          {
+            "doc_id": "qLKc_5QB27-qGM903Xs7",
+            "message": "This shift is incomplete and cannot be calculated for summary"
+          },
+          {
+            "doc_id": "qbKk_5QB27-qGM90knv4",
+            "message": "This shift is incomplete and cannot be calculated for summary"
+          }
+        ]
+      },
+      {
+        "date": "2025-02-04",
+        "overtime": [
+          {
+            "doc_id": "qrK0_5QB27-qGM90uHvz",
+            "message": "This shift is incomplete and cannot be calculated for summary"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "user_id": "user_2riGKbNYXYcEw48Muzgp0N3y5vE",
+    "org_id": "org_2riGCGwJV4T5JwxLOFajkNqc03U",
+    "name": "null",
+    "avatarUrl": "https://img.clerk.com/eyJ0eXBlIjoiZGVmYXVsdCIsImlpZCI6Imluc18ycmhrN1NSbmdycWNNck5xbW9CUnlFZU9SZkoiLCJyaWQiOiJ1c2VyXzJyaUdLYk5ZWFljRXc0OE11emdwME4zeTV2RSJ9",
+    "branch": "Branch A",
+    "workingSummary": "0hrs/1days",
+    "status": "working",
+    "email": "test3@example.com",
+    "position": "",
+    "all_shift": [
+      {
+        "date": "2025-02-11",
+        "on-site": [
+          {
+            "doc_id": "NkTz8JQBJCFmnk-i8-IL",
+            "start": "00:41",
+            "end": "00:41",
+            "start_official": "00:41",
+            "end_official": "00:41",
+            "duration": "00:00:04",
+            "duration_official": "00:00:04",
+            "reason": "No reason provided",
+            "change_history": []
+          },
+          {
+            "doc_id": "PUT_8JQBJCFmnk-ibOKm",
+            "message": "This shift is incomplete and cannot be calculated for summary"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "user_id": "user_2riGJwrbjeqS3iHPEcZze9ZheuP",
+    "org_id": "org_2riGCGwJV4T5JwxLOFajkNqc03U",
+    "name": "null",
+    "avatarUrl": "https://img.clerk.com/eyJ0eXBlIjoiZGVmYXVsdCIsImlpZCI6Imluc18ycmhrN1NSbmdycWNNck5xbW9CUnlFZU9SZkoiLCJyaWQiOiJ1c2VyXzJyaUdKd3JiamVxUzNpSFBFY1p6ZTlaaGV1UCJ9",
+    "branch": "Branch A",
+    "workingSummary": "345hrs/41days",
+    "status": "offline",
+    "email": "test2@example.com",
+    "position": "",
+    "all_shift": [
+      {
+        "date": "2025-01-20",
+        "wfh": [
+          {
+            "doc_id": "RHLmoJQByWUJUNbCr25o",
+            "start": "14:55",
+            "end": "00:02",
+            "start_official": "15:00",
+            "end_official": "00:00",
+            "duration": "09:06:52",
+            "duration_official": "09:00:00",
+            "reason": "[system] regular shift",
+            "change_history": [
+              "[Correct clock in time @ 20/01/2025 09:30] Shift start time was updated from 20/01/2025 14:00 to 20/01/2025 15:00",
+              "[Correct clock in time @ 20/01/2025 09:30] Clock-in time was updated from 20/01/2025 14:55 to 20/01/2025 16:30"
+            ]
+          }
+        ],
+        "on-site": [
+          {
+            "doc_id": "R3LmoJQByWUJUNbC2m43",
+            "start": "00:58",
+            "end": "04:03",
+            "start_official": "01:00",
+            "end_official": "04:00",
+            "duration": "03:04:42",
+            "duration_official": "03:00:00",
+            "reason": "[system] overtime work",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-01-21",
+        "wfh": [
+          {
+            "doc_id": "RXLmoJQByWUJUNbCxW6E",
+            "message": "This shift is incomplete and cannot be calculated for summary"
+          }
+        ]
+      },
+      {
+        "date": "2025-01-22",
+        "wfh": [
+          {
+            "doc_id": "SHLmoJQByWUJUNbC424-",
+            "start": "15:57",
+            "end": "00:05",
+            "start_official": "16:00",
+            "end_official": "00:00",
+            "duration": "08:07:27",
+            "duration_official": "08:00:00",
+            "reason": "[system] work from home",
+            "change_history": []
+          }
+        ],
+        "on-site": [
+          {
+            "doc_id": "uD1BqJQB0ZDgdSeSM3a5",
+            "start": "00:58",
+            "end": "05:05",
+            "start_official": "01:00",
+            "end_official": "05:00",
+            "duration": "04:07:21",
+            "duration_official": "04:00:00",
+            "reason": "[manager] urgent project deployment",
+            "change_history": [
+              "[Changed reason due to deployment work @ 22/01/2025 20:15] Shift reason was updated from '[system] overtime work' to '[manager] urgent project deployment'"
+            ]
+          }
+        ]
+      },
+      {
+        "date": "2025-01-23",
+        "on-site": [
+          {
+            "doc_id": "SXLmoJQByWUJUNbC7G46",
+            "start": "15:54",
+            "end": "01:02",
+            "start_official": "16:00",
+            "end_official": "01:00",
+            "duration": "09:08:12",
+            "duration_official": "09:00:00",
+            "reason": "[system] regular shift",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-01-26",
+        "on-site": [
+          {
+            "doc_id": "UXK2oZQByWUJUNbCM26q",
+            "start": "22:24",
+            "end": "22:24",
+            "start_official": "15:30",
+            "end_official": "17:45",
+            "duration": "00:00:06",
+            "duration_official": "02:15:00",
+            "reason": "[USER] working regularly",
+            "change_history": [
+              "[correct check in and check out time @ 26/01/2025 15:24] Shift end time was updated from 27/01/2025 00:00 to 26/01/2025 17:45"
+            ]
+          }
+        ]
+      },
+      {
+        "date": "2025-01-27",
+        "on-site": [
+          {
+            "doc_id": "uT1nqJQB0ZDgdSeSpHa_",
+            "start": "05:35",
+            "end": "05:36",
+            "start_official": "15:30",
+            "end_official": "00:00",
+            "duration": "00:00:20",
+            "duration_official": "08:30:00",
+            "reason": "[USER] working regularly",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-01-28",
+        "on-site": [
+          {
+            "doc_id": "uj3msJQB0ZDgdSeS-HY6",
+            "message": "This shift is incomplete and cannot be calculated for summary"
+          }
+        ]
+      },
+      {
+        "date": "2025-01-29",
+        "on-site": [
+          {
+            "doc_id": "uz0ssZQB0ZDgdSeSZHbU",
+            "start": "15:28",
+            "end": "00:32",
+            "start_official": "15:30",
+            "end_official": "00:30",
+            "duration": "09:04:20",
+            "duration_official": "09:00:00",
+            "reason": "[USER] working regularly",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-01-30",
+        "on-site": [
+          {
+            "doc_id": "vD0usZQB0ZDgdSeSBHbI",
+            "message": "This shift is incomplete and cannot be calculated for summary"
+          }
+        ]
+      },
+      {
+        "date": "2025-01-31",
+        "on-site": [
+          {
+            "doc_id": "vz0wsZQB0ZDgdSeSk3ZV",
+            "start": "13:25",
+            "end": "21:22",
+            "start_official": "13:20",
+            "end_official": "21:30",
+            "duration": "07:57:24",
+            "duration_official": "08:10:00",
+            "reason": "Go to other branch",
+            "change_history": [
+              "[correct shift reason @ 29/01/2025 16:23] Shift reason was updated from '[USER] working regularly' to 'Go to other branch'",
+              "[correct shift reason @ 29/01/2025 16:23] Clock-in time was updated from 29/01/2025 22:32 to 29/01/2025 13:25",
+              "[correct shift reason @ 29/01/2025 16:23] Clock-out time was updated from 29/01/2025 22:32 to 29/01/2025 21:22"
+            ]
+          }
+        ],
+        "overtime": [
+          {
+            "doc_id": "wD0xsZQB0ZDgdSeSWnbi",
+            "start": "21:30",
+            "end": "02:45",
+            "start_official": "21:30",
+            "end_official": "02:45",
+            "duration": "05:14:59",
+            "duration_official": "05:15:00",
+            "reason": "Go to other branch",
+            "change_history": [
+              "[correct check in and check out time @ 29/01/2025 16:20] Clock-in time was updated from 29/01/2025 22:33 to 31/01/2025 21:30",
+              "[correct check in and check out time @ 29/01/2025 16:20] Clock-out time was updated from 29/01/2025 22:33 to 01/02/2025 02:45",
+              "[correct shift reason @ 29/01/2025 16:24] Shift reason was updated from '[USER] working for OT' to 'Go to other branch'"
+            ]
+          }
+        ]
+      },
+      {
+        "date": "2025-02-01",
+        "overtime": [
+          {
+            "doc_id": "wT3LsZQB0ZDgdSeSa3Yp",
+            "start": "18:30",
+            "end": "00:45",
+            "start_official": "21:30",
+            "end_official": "02:45",
+            "duration": "06:14:59",
+            "duration_official": "05:15:00",
+            "reason": "Go to other branch",
+            "change_history": [
+              "[correct shift reason @ 29/01/2025 18:22] Shift reason was updated from '[USER] working for OT' to 'Go to other branch'",
+              "[correct shift time @ 29/01/2025 18:22] Clock-out time was updated from 30/01/2025 01:21 to 02/02/2025 00:45",
+              "[correct shift time @ 29/01/2025 18:25] Clock-in time was updated from 30/01/2025 01:21 to 01/02/2025 18:30",
+              "[correct shift time @ 29/01/2025 19:03] Clock-out image was updated"
+            ]
+          }
+        ]
+      },
+      {
+        "date": "2025-02-02",
+        "overtime": [
+          {
+            "doc_id": "wj0EspQB0ZDgdSeS9Hae",
+            "start": "02:24",
+            "end": "02:24",
+            "start_official": "21:30",
+            "end_official": "02:45",
+            "duration": "00:00:21",
+            "duration_official": "05:15:00",
+            "reason": "[USER] working for OT",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-02-11",
+        "on-site": [
+          {
+            "doc_id": "M0Tr8JQBJCFmnk-im-Ij",
+            "start": "00:32",
+            "end": "00:37",
+            "start_official": "00:32",
+            "end_official": "00:37",
+            "duration": "00:05:04",
+            "duration_official": "00:05:04",
+            "reason": "No reason provided",
+            "change_history": []
+          },
+          {
+            "doc_id": "NUTy8JQBJCFmnk-il-J2",
+            "start": "00:40",
+            "end": "00:40",
+            "start_official": "00:40",
+            "end_official": "00:40",
+            "duration": "00:00:16",
+            "duration_official": "00:00:17",
+            "reason": "No reason provided",
+            "change_history": []
+          },
+          {
+            "doc_id": "N0T08JQBJCFmnk-ituJr",
+            "start": "00:42",
+            "end": "00:44",
+            "start_official": "00:42",
+            "end_official": "00:44",
+            "duration": "00:01:25",
+            "duration_official": "00:01:25",
+            "reason": "No reason provided",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-02-14",
+        "on-site": [
+          {
+            "doc_id": "PkRdBJUBJCFmnk-ij-KA",
+            "message": "This shift is incomplete and cannot be calculated for summary"
+          }
+        ]
+      },
+      {
+        "date": "2025-03-01",
+        "on-site": [
+          {
+            "doc_id": "FT2aupQB0ZDgdSeSbHdP",
+            "start": "07:30",
+            "end": "15:18",
+            "start_official": "07:30",
+            "end_official": "15:15",
+            "duration": "07:47:29",
+            "duration_official": "07:45:00",
+            "reason": "Regular warehouse operations and order processing",
+            "change_history": []
+          }
+        ],
+        "overtime": [
+          {
+            "doc_id": "MD2aupQB0ZDgdSeSmnc9",
+            "start": "15:16",
+            "end": "17:45",
+            "start_official": "15:15",
+            "end_official": "17:45",
+            "duration": "02:28:09",
+            "duration_official": "02:30:00",
+            "reason": "Urgent shipment processing for today",
+            "change_history": [
+              "[Correct clock-out time @ 31/01/2025 11:25] Clock-in time was updated from 31/01/2025 11:24 to 01/03/2025 15:16",
+              "[Correct clock-out time @ 31/01/2025 11:25] Clock-out time was updated from 31/01/2025 11:24 to 01/03/2025 17:45",
+              "[Correct shift reasons @ 31/01/2025 11:38] Shift reason was updated from 'Urgent shipment processing for next-day delivery' to 'Urgent shipment processing for today'"
+            ]
+          }
+        ]
+      },
+      {
+        "date": "2025-03-02",
+        "on-site": [
+          {
+            "doc_id": "Fj2aupQB0ZDgdSeSbndo",
+            "start": "05:12",
+            "end": "13:44",
+            "start_official": "05:15",
+            "end_official": "13:45",
+            "duration": "08:31:57",
+            "duration_official": "08:30:00",
+            "reason": "Daily inventory management and stock organization",
+            "change_history": []
+          }
+        ],
+        "overtime": [
+          {
+            "doc_id": "MT2aupQB0ZDgdSeSm3fO",
+            "start": "13:42",
+            "end": "18:11",
+            "start_official": "13:45",
+            "end_official": "18:15",
+            "duration": "04:29:14",
+            "duration_official": "04:30:00",
+            "reason": "System maintenance and inventory reconciliation",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-03",
+        "on-site": [
+          {
+            "doc_id": "Fz2aupQB0ZDgdSeScHcw",
+            "start": "06:15",
+            "end": "15:02",
+            "start_official": "06:15",
+            "end_official": "15:00",
+            "duration": "08:47:13",
+            "duration_official": "08:45:00",
+            "reason": "Standard shipment processing and documentation",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-04",
+        "overtime": [
+          {
+            "doc_id": "Mj2aupQB0ZDgdSeSnXd5",
+            "start": "16:45",
+            "end": "21:13",
+            "start_official": "16:45",
+            "end_official": "21:15",
+            "duration": "04:27:26",
+            "duration_official": "04:30:00",
+            "reason": "Peak season order backlog clearance",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-05",
+        "on-site": [
+          {
+            "doc_id": "GD2aupQB0ZDgdSeScnco",
+            "start": "07:28",
+            "end": "15:32",
+            "start_official": "07:30",
+            "end_official": "15:30",
+            "duration": "08:03:37",
+            "duration_official": "08:00:00",
+            "reason": "Daily delivery schedule coordination",
+            "change_history": []
+          }
+        ],
+        "overtime": [
+          {
+            "doc_id": "Mz2aupQB0ZDgdSeSnnf6",
+            "start": "15:36",
+            "end": "16:36",
+            "start_official": "15:30",
+            "end_official": "16:45",
+            "duration": "00:59:49",
+            "duration_official": "01:15:00",
+            "reason": "Last-minute large customer order fulfillment",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-06",
+        "on-site": [
+          {
+            "doc_id": "GT2aupQB0ZDgdSeSc3ey",
+            "start": "06:15",
+            "end": "14:59",
+            "start_official": "06:15",
+            "end_official": "15:00",
+            "duration": "08:44:48",
+            "duration_official": "08:45:00",
+            "reason": "Regular inbound shipment processing",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-07",
+        "on-site": [
+          {
+            "doc_id": "Gj2aupQB0ZDgdSeSdXdB",
+            "start": "07:11",
+            "end": "16:55",
+            "start_official": "07:15",
+            "end_official": "16:45",
+            "duration": "09:43:39",
+            "duration_official": "09:30:00",
+            "reason": "Standard inventory receiving and putaway",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-08",
+        "on-site": [
+          {
+            "doc_id": "Gz2aupQB0ZDgdSeSd3cB",
+            "start": "06:35",
+            "end": "11:31",
+            "start_official": "06:30",
+            "end_official": "11:30",
+            "duration": "04:55:50",
+            "duration_official": "05:00:00",
+            "reason": "Daily order fulfillment operations",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-09",
+        "on-site": [
+          {
+            "doc_id": "HD2aupQB0ZDgdSeSeXc_",
+            "start": "05:47",
+            "end": "12:59",
+            "start_official": "05:45",
+            "end_official": "13:00",
+            "duration": "07:11:33",
+            "duration_official": "07:15:00",
+            "reason": "Regular quality control inspection",
+            "change_history": []
+          }
+        ],
+        "overtime": [
+          {
+            "doc_id": "ND2aupQB0ZDgdSeSoHeb",
+            "start": "12:57",
+            "end": "17:16",
+            "start_official": "13:00",
+            "end_official": "17:15",
+            "duration": "04:19:01",
+            "duration_official": "04:15:00",
+            "reason": "Covering for absent team member",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-10",
+        "overtime": [
+          {
+            "doc_id": "NT2aupQB0ZDgdSeSoncX",
+            "start": "10:00",
+            "end": "15:49",
+            "start_official": "10:00",
+            "end_official": "15:45",
+            "duration": "05:49:32",
+            "duration_official": "05:45:00",
+            "reason": "End-of-month inventory count and reporting",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-11",
+        "on-site": [
+          {
+            "doc_id": "HT2aupQB0ZDgdSeSe3cb",
+            "start": "08:01",
+            "end": "18:39",
+            "start_official": "08:15",
+            "end_official": "18:30",
+            "duration": "10:38:29",
+            "duration_official": "10:15:00",
+            "reason": "Daily route planning and optimization",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-12",
+        "on-site": [
+          {
+            "doc_id": "Hj2aupQB0ZDgdSeSfHe2",
+            "start": "06:28",
+            "end": "13:48",
+            "start_official": "06:30",
+            "end_official": "13:45",
+            "duration": "07:19:25",
+            "duration_official": "07:15:00",
+            "reason": "Regular maintenance of warehouse equipment",
+            "change_history": []
+          }
+        ],
+        "overtime": [
+          {
+            "doc_id": "Nj2aupQB0ZDgdSeSo3em",
+            "start": "13:46",
+            "end": "16:20",
+            "start_official": "13:45",
+            "end_official": "16:15",
+            "duration": "02:34:19",
+            "duration_official": "02:30:00",
+            "reason": "Special handling required for temperature-sensitive cargo",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-13",
+        "on-site": [
+          {
+            "doc_id": "Hz2aupQB0ZDgdSeSfndQ",
+            "start": "09:33",
+            "end": "16:10",
+            "start_official": "09:30",
+            "end_official": "16:15",
+            "duration": "06:37:27",
+            "duration_official": "06:45:00",
+            "reason": "Standard customer order processing",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-14",
+        "on-site": [
+          {
+            "doc_id": "ID2aupQB0ZDgdSeSf3fc",
+            "start": "06:25",
+            "end": "16:14",
+            "start_official": "06:30",
+            "end_official": "16:15",
+            "duration": "09:48:26",
+            "duration_official": "09:45:00",
+            "reason": "Daily supply chain coordination",
+            "change_history": []
+          }
+        ],
+        "overtime": [
+          {
+            "doc_id": "Nz2aupQB0ZDgdSeSpXdH",
+            "start": "16:16",
+            "end": "17:44",
+            "start_official": "16:15",
+            "end_official": "17:45",
+            "duration": "01:27:55",
+            "duration_official": "01:30:00",
+            "reason": "Warehouse reorganization for efficiency improvement",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-15",
+        "on-site": [
+          {
+            "doc_id": "IT2aupQB0ZDgdSeSgXez",
+            "start": "07:30",
+            "end": "17:15",
+            "start_official": "07:30",
+            "end_official": "17:15",
+            "duration": "09:44:59",
+            "duration_official": "09:45:00",
+            "reason": "Regular packaging material management",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-16",
+        "overtime": [
+          {
+            "doc_id": "OD2aupQB0ZDgdSeSpnfa",
+            "start": "12:29",
+            "end": "17:31",
+            "start_official": "12:30",
+            "end_official": "17:30",
+            "duration": "05:01:46",
+            "duration_official": "05:00:00",
+            "reason": "Loading delay due to supplier late delivery",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-17",
+        "on-site": [
+          {
+            "doc_id": "Ij2aupQB0ZDgdSeSg3dE",
+            "start": "07:45",
+            "end": "18:23",
+            "start_official": "07:45",
+            "end_official": "18:15",
+            "duration": "10:37:50",
+            "duration_official": "10:30:00",
+            "reason": "Daily safety inspection and compliance checks",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-18",
+        "on-site": [
+          {
+            "doc_id": "Iz2aupQB0ZDgdSeShXc3",
+            "start": "07:17",
+            "end": "16:29",
+            "start_official": "07:00",
+            "end_official": "16:30",
+            "duration": "09:12:50",
+            "duration_official": "09:30:00",
+            "reason": "Regular inventory location optimization",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-19",
+        "on-site": [
+          {
+            "doc_id": "JD2aupQB0ZDgdSeShney",
+            "start": "09:45",
+            "end": "15:45",
+            "start_official": "09:45",
+            "end_official": "15:45",
+            "duration": "06:00:42",
+            "duration_official": "06:00:00",
+            "reason": "Standard returns processing",
+            "change_history": [
+              "[Correct shift reasons @ 31/01/2025 11:45] Clock-in time was updated from 31/01/2025 11:24 to 19/03/2025 09:45",
+              "[Correct shift reasons @ 31/01/2025 11:45] Clock-out time was updated from 31/01/2025 11:24 to 19/03/2025 15:45"
+            ]
+          }
+        ]
+      },
+      {
+        "date": "2025-03-20",
+        "on-site": [
+          {
+            "doc_id": "JT2aupQB0ZDgdSeSiHdE",
+            "start": "05:32",
+            "end": "10:44",
+            "start_official": "05:30",
+            "end_official": "10:45",
+            "duration": "05:12:03",
+            "duration_official": "05:15:00",
+            "reason": "Daily team coordination and task assignment",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-21",
+        "on-site": [
+          {
+            "doc_id": "Jj2aupQB0ZDgdSeSiXfW",
+            "start": "07:18",
+            "end": "17:46",
+            "start_official": "07:00",
+            "end_official": "17:45",
+            "duration": "10:28:40",
+            "duration_official": "10:45:00",
+            "reason": "Regular equipment maintenance checks",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-22",
+        "on-site": [
+          {
+            "doc_id": "Jz2aupQB0ZDgdSeSi3dw",
+            "start": "09:03",
+            "end": "17:17",
+            "start_official": "09:00",
+            "end_official": "17:15",
+            "duration": "08:13:49",
+            "duration_official": "08:15:00",
+            "reason": "Standard shipment documentation processing",
+            "change_history": []
+          }
+        ],
+        "overtime": [
+          {
+            "doc_id": "OT2aupQB0ZDgdSeSqHeE",
+            "start": "17:13",
+            "end": "21:21",
+            "start_official": "17:15",
+            "end_official": "21:15",
+            "duration": "04:08:13",
+            "duration_official": "04:00:00",
+            "reason": "Emergency order processing for medical supplies",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-23",
+        "on-site": [
+          {
+            "doc_id": "KD2aupQB0ZDgdSeSjXcS",
+            "start": "08:55",
+            "end": "14:44",
+            "start_official": "09:15",
+            "end_official": "14:45",
+            "duration": "05:48:31",
+            "duration_official": "05:30:00",
+            "reason": "Managing cargo",
+            "change_history": [
+              "[Correct shift reasons @ 31/01/2025 11:46] Shift reason was updated from 'Daily customer inquiry handling' to 'Managing cargo'",
+              "[Correct shift reasons @ 31/01/2025 11:46] Clock-in time was updated from 31/01/2025 11:24 to 23/03/2025 08:55",
+              "[Correct shift reasons @ 31/01/2025 11:46] Clock-out time was updated from 31/01/2025 11:24 to 23/03/2025 14:44"
+            ]
+          }
+        ]
+      },
+      {
+        "date": "2025-03-24",
+        "on-site": [
+          {
+            "doc_id": "KT2aupQB0ZDgdSeSjnfY",
+            "start": "07:47",
+            "end": "16:07",
+            "start_official": "07:45",
+            "end_official": "16:00",
+            "duration": "08:19:31",
+            "duration_official": "08:15:00",
+            "reason": "Regular stock rotation tasks",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-25",
+        "on-site": [
+          {
+            "doc_id": "Kj2aupQB0ZDgdSeSkHd1",
+            "start": "05:27",
+            "end": "14:33",
+            "start_official": "05:30",
+            "end_official": "14:15",
+            "duration": "09:06:14",
+            "duration_official": "08:45:00",
+            "reason": "Standard loading dock operations",
+            "change_history": []
+          }
+        ],
+        "overtime": [
+          {
+            "doc_id": "Oj2aupQB0ZDgdSeSqnc6",
+            "start": "14:17",
+            "end": "19:32",
+            "start_official": "14:15",
+            "end_official": "19:30",
+            "duration": "05:15:07",
+            "duration_official": "05:15:00",
+            "reason": "Cross-dock operation for time-sensitive deliveries",
+            "change_history": [
+              "[Correct shift reasons @ 31/01/2025 11:40] Clock-in time was updated from 31/01/2025 11:24 to 25/03/2025 14:17",
+              "[Correct shift reasons @ 31/01/2025 11:40] Clock-out time was updated from 31/01/2025 11:24 to 25/03/2025 19:32",
+              "[Correct shift reasons @ 31/01/2025 11:40] Clock-in image was updated",
+              "[Correct shift reasons @ 31/01/2025 11:40] Clock-out image was updated"
+            ]
+          }
+        ]
+      },
+      {
+        "date": "2025-03-26",
+        "on-site": [
+          {
+            "doc_id": "Kz2aupQB0ZDgdSeSkncf",
+            "start": "05:46",
+            "end": "14:27",
+            "start_official": "05:45",
+            "end_official": "14:30",
+            "duration": "08:40:14",
+            "duration_official": "08:45:00",
+            "reason": "Daily inventory accuracy checks",
+            "change_history": []
+          }
+        ],
+        "overtime": [
+          {
+            "doc_id": "Oz2aupQB0ZDgdSeSq3fZ",
+            "start": "14:24",
+            "end": "16:31",
+            "start_official": "14:30",
+            "end_official": "16:30",
+            "duration": "02:07:04",
+            "duration_official": "02:00:00",
+            "reason": "System upgrade support and data migration",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-27",
+        "overtime": [
+          {
+            "doc_id": "PD2aupQB0ZDgdSeSrXd7",
+            "start": "17:33",
+            "end": "19:02",
+            "start_official": "17:30",
+            "end_official": "19:00",
+            "duration": "01:29:32",
+            "duration_official": "01:30:00",
+            "reason": "High volume of returns processing",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-28",
+        "on-site": [
+          {
+            "doc_id": "LD2aupQB0ZDgdSeSk3ed",
+            "start": "05:01",
+            "end": "15:05",
+            "start_official": "05:00",
+            "end_official": "15:00",
+            "duration": "10:04:33",
+            "duration_official": "10:00:00",
+            "reason": "Standard warehouse security procedures",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-29",
+        "on-site": [
+          {
+            "doc_id": "LT2aupQB0ZDgdSeSlXc-",
+            "start": "08:58",
+            "end": "17:12",
+            "start_official": "09:00",
+            "end_official": "17:15",
+            "duration": "08:13:44",
+            "duration_official": "08:15:00",
+            "reason": "Daily dispatch coordination",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-30",
+        "on-site": [
+          {
+            "doc_id": "Lj2aupQB0ZDgdSeSlnfo",
+            "start": "07:50",
+            "end": "16:41",
+            "start_official": "07:45",
+            "end_official": "16:45",
+            "duration": "08:50:55",
+            "duration_official": "09:00:00",
+            "reason": "Regular material handling operations",
+            "change_history": []
+          }
+        ],
+        "overtime": [
+          {
+            "doc_id": "PT2aupQB0ZDgdSeSr3ce",
+            "start": "16:43",
+            "end": "17:55",
+            "start_official": "16:45",
+            "end_official": "18:00",
+            "duration": "01:12:09",
+            "duration_official": "01:15:00",
+            "reason": "Container unloading backlog clearance",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-03-31",
+        "on-site": [
+          {
+            "doc_id": "Lz2aupQB0ZDgdSeSmHdw",
+            "start": "06:14",
+            "end": "13:30",
+            "start_official": "06:15",
+            "end_official": "13:30",
+            "duration": "07:15:32",
+            "duration_official": "07:15:00",
+            "reason": "Standard end-of-day reporting and handover",
+            "change_history": [
+              "[Correct shift time @ 31/01/2025 11:47] Clock-in time was updated from 31/01/2025 11:24 to 31/03/2025 06:14",
+              "[Correct shift time @ 31/01/2025 11:47] Clock-out time was updated from 31/01/2025 11:24 to 31/03/2025 13:30"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "user_id": "user_2rhkBbqbyoTvNs7FIje4DWKDgFv",
+    "org_id": "org_2riGCGwJV4T5JwxLOFajkNqc03U",
+    "name": "Tawan",
+    "avatarUrl": "https://img.clerk.com/eyJ0eXBlIjoicHJveHkiLCJzcmMiOiJodHRwczovL2ltYWdlcy5jbGVyay5kZXYvb2F1dGhfbGluZS9pbWdfMnJoa0JkeDhLbTFUc0VjdmNweW9MeG05UjlMIn0",
+    "branch": "Branch A",
+    "workingSummary": "0hrs/1days",
+    "status": "working",
+    "email": "alohasunshineday@gmail.com",
+    "position": "",
+    "all_shift": [
+      {
+        "date": "2025-02-11",
+        "wfh": [
+          {
+            "doc_id": "MkTr8JQBJCFmnk-ijOIm",
+            "start": "00:32",
+            "end": "00:37",
+            "start_official": "00:32",
+            "end_official": "00:37",
+            "duration": "00:05:01",
+            "duration_official": "00:05:01",
+            "reason": "No reason provided",
+            "change_history": []
+          },
+          {
+            "doc_id": "NETw8JQBJCFmnk-i2uJO",
+            "start": "00:38",
+            "end": "00:38",
+            "start_official": "00:38",
+            "end_official": "00:38",
+            "duration": "00:00:34",
+            "duration_official": "00:00:35",
+            "reason": "No reason provided",
+            "change_history": []
+          }
+        ]
+      },
+      {
+        "date": "2025-02-14",
+        "on-site": [
+          {
+            "doc_id": "QEQrBZUBJCFmnk-iHuKC",
+            "message": "This shift is incomplete and cannot be calculated for summary"
+          }
+        ]
+      }
+    ]
+  }
+]

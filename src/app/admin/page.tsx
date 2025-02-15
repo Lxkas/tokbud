@@ -354,7 +354,7 @@ const AdminDashboard = () => {
     user.branch.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleExport = async () => {
+  const handleExport = () => {
     const startDate = dateRange?.from?.toISOString().split('T')[0];
     const endDate = dateRange?.to?.toISOString().split('T')[0];
     
@@ -362,62 +362,14 @@ const AdminDashboard = () => {
       console.error("Date range is not properly set");
       return;
     }
-  
-    try {
-      // Get the currently filtered/displayed users
-      const selectedUserData = users.filter(user => selectedUsers.includes(user.id));
-  
-      // Fetch data for all selected users
-      const exportPromises = selectedUsers.map(async userId => {
-        const exportData = await fetchUserWorkingHoursExport(userId, startDate, endDate, session);
-        if (!exportData) return null;
-  
-        // Find the corresponding user data
-        const userData = selectedUserData.find(user => user.id === userId);
-        if (!userData) return null;
 
-        // Validate user IDs match
-        if (userData.id !== exportData.user_id) {
-          console.error(`User ID mismatch for user ${userData.id}`);
-          return null;
-        }
+    const exportData = {
+      user_ids: selectedUsers,
+      start_date: startDate,
+      end_date: endDate
+    };
 
-        // Restructure the data with user info at the same level as all_shift
-        return {
-          user_id: userData.id,
-          org_id: exportData.org_id,
-          name: userData.name,
-          avatarUrl: userData.avatarUrl,
-          branch: userData.branch,
-          workingSummary: userData.workingSummary,
-          status: userData.status,
-          email: userData.details.email,
-          position: userData.details.position,
-          all_shift: exportData.all_shift
-        };
-      });
-  
-      const results = await Promise.all(exportPromises);
-      
-      // Filter out null results
-      const combinedData = results.filter((result): result is any => result !== null);
-      
-      console.log("Combined export data:", combinedData);
-      
-      // Download as JSON file
-      const blob = new Blob([JSON.stringify(combinedData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `working-hours-export-${startDate}-to-${endDate}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-    } catch (error) {
-      console.error("Error exporting data:", error);
-    }
+    console.log("Export data:", exportData);
   };
 
   return (
