@@ -59,7 +59,7 @@ export const workingHoursController = new Elysia()
         try {
             const usersWithOrgs = await getAllUsersWithOrganizations();
             const transformedUsers = usersWithOrgs.map(transformUserData);
-    
+
             // Get all user IDs
             const userIds = transformedUsers.map(user => user.user_id)
             
@@ -71,7 +71,7 @@ export const workingHoursController = new Elysia()
                 ...user,
                 is_working: workingStatuses[index]
             }))
-            
+
             return {
                 success: true,
                 data: usersWithStatus
@@ -170,6 +170,8 @@ export const workingHoursController = new Elysia()
                 sort_dates_ascending: sortDatesAsc,
                 sort_shifts_ascending: sortShiftsAsc
             });
+
+            console.log(exportData)
 
             return exportData;
 

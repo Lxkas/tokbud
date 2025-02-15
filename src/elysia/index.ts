@@ -5,6 +5,7 @@ import { timeRecordController2 } from "./controllers/time-record";
 import { jwtMiddleware } from "@/middleware";
 import { workingHoursController } from "./controllers/working-hours";
 import { uploadController } from "./controllers/upload";
+import { exportPdfController } from "./controllers/exportpdf";
 import { cors } from "@elysiajs/cors";
 
 interface DevSessionParams {
@@ -41,6 +42,7 @@ export const elysiaApp = new Elysia({ prefix: "/api" })
 	.use(webhookController)
 	.use(timeRecordController2)
 	.use(workingHoursController)
+	.use(exportPdfController)
 	.use(uploadController);
 
 // Log all registered routes
