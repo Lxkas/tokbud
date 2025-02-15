@@ -35,21 +35,6 @@ const data = {
 				},
 			],
 		},
-
-		{
-			title: "Overtime",
-			url: "#",
-			items: [
-				{
-					title: "Add/remove Overtime",
-					url: "#",
-				},
-				{
-					title: "Edit Overtime",
-					url: "#",
-				},
-			],
-		},
 	],
 };
 
