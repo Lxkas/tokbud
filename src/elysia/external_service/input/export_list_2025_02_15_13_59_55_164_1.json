@@ -1,0 +1,31 @@
+[
+  {
+    "user_id": "user_2srDR9L3cGp4cMwoHChzmGSW6FD",
+    "org_id": "org_2riGCGwJV4T5JwxLOFajkNqc03U",
+    "name": "Chinathaipan 🐬",
+    "avatarUrl": "https://img.clerk.com/eyJ0eXBlIjoicHJveHkiLCJzcmMiOiJodHRwczovL2ltYWdlcy5jbGVyay5kZXYvb2F1dGhfbGluZS9pbWdfMnNyRFI0V2xkTko2WjEzbnlhcDJDc2NOdjdVIn0",
+    "branch": "Branch A",
+    "workingSummary": "5hrs/1days",
+    "status": "offline",
+    "email": "cartoonabe@gmail.com",
+    "position": "",
+    "all_shift": [
+      {
+        "date": "2025-02-02",
+        "overtime": [
+          {
+            "doc_id": "9M85-5QByn4F19N9AI4v",
+            "start": "00:33",
+            "end": "00:33",
+            "start_official": "21:30",
+            "end_official": "02:45",
+            "duration": "00:00:11",
+            "duration_official": "05:15:00",
+            "reason": "[USER] working for OT",
+            "change_history": []
+          }
+        ]
+      }
+    ]
+  }
+]

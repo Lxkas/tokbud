@@ -1,9 +1,17 @@
 import Elysia from "elysia";
+import { writeFile, mkdir } from 'fs/promises';
+import { join, dirname } from 'path';
+import { spawn } from 'child_process';
 import { jwtMiddleware } from "@/middleware";
 import { getAllUsersWithOrganizations } from "@/elysia/services/clerk";
 import { getBulkLatestUserStatus } from "@/elysia/services/es";
 import { transformUserData } from "@/elysia/utils/helpers";
 import { getWorkingHoursExporter } from "@/elysia/services/working-hours";
+import { fileURLToPath } from 'url';
+
+// Get current file path
+const currentFilePath = fileURLToPath(import.meta.url);
+const currentDir = dirname(currentFilePath);
 
 // Interfaces for the exported data structure
 interface ExportedShiftDetail {
@@ -118,6 +126,67 @@ const calculateWorkingSummary = (shifts: DailyShiftData[]): string => {
     return `${totalHours}hrs/${uniqueDays}days`;
 };
 
+// Function to generate filename
+const generateFilename = (userIds: string[]): string => {
+    const now = new Date();
+    const timestamp = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+      String(now.getHours()).padStart(2, '0'),
+      String(now.getMinutes()).padStart(2, '0'),
+      String(now.getSeconds()).padStart(2, '0'),
+      String(now.getMilliseconds()).padStart(3, '0')
+    ].join('_');
+    
+    return `export_list_${timestamp}_${userIds.length}.json`;
+  };
+  
+  // Function to execute Python script
+  const executePythonScript = (jsonFilename: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const pythonCommand = process.platform === 'win32' ? 'python' : 'python3';
+      
+      // Construct absolute paths using currentDir
+      const scriptPath = join(currentDir, '..', 'external_service', 'to_pdf.py');
+      const jsonPath = join(currentDir, '..', 'external_service', 'input', jsonFilename);
+      
+      console.log('Executing Python script...');
+      console.log('Script path:', scriptPath);
+      console.log('JSON path:', jsonPath);
+      
+      const pythonProcess = spawn(pythonCommand, [scriptPath, jsonPath]);
+  
+      let stdoutData = '';
+      let stderrData = '';
+  
+      pythonProcess.stdout.on('data', (data) => {
+        stdoutData += data.toString();
+        console.log(`Python Output: ${data}`);
+      });
+  
+      pythonProcess.stderr.on('data', (data) => {
+        stderrData += data.toString();
+        console.error(`Python Error: ${data}`);
+      });
+  
+      pythonProcess.on('close', (code) => {
+        if (code === 0 || (stdoutData.includes('Generated PDF') && !stderrData.trim())) {
+          console.log('Python script completed successfully');
+          resolve();
+        } else {
+          console.error('Python script error:', stderrData);
+          reject(new Error(stderrData || 'Python script execution failed'));
+        }
+      });
+  
+      pythonProcess.on('error', (error) => {
+        console.error('Failed to start Python script:', error);
+        reject(error);
+      });
+    });
+  };
+
 export const exportPdfController = new Elysia({ prefix: "/export-pdf" })
   .use(jwtMiddleware)
   .post("/", async ({ body, jwt, set, cookie: { auth } }: ElysiaExportContext) => {
@@ -180,12 +249,33 @@ export const exportPdfController = new Elysia({ prefix: "/export-pdf" })
 
       const exportData = await Promise.all(exportPromises);
 
+      // Generate filename
+      const filename = generateFilename(user_ids);
+      console.log('Generated filename:', filename);
+      
+      // Construct input directory path using currentDir
+      const inputDir = join(currentDir, '..', 'external_service', 'input');
+      console.log('Input directory:', inputDir);
+      
+      // Ensure input directory exists
+      await mkdir(inputDir, { recursive: true });
+      
+      // Save JSON file
+      const jsonFilePath = join(inputDir, filename);
+      console.log('JSON file path:', jsonFilePath);
+      await writeFile(jsonFilePath, JSON.stringify(exportData, null, 2));
+
+      // Execute Python script
+      await executePythonScript(filename);
+
       return {
         status: "ok",
-        data: exportData
+        message: "PDF generation completed successfully",
+        filename: filename
       };
 
     } catch (error) {
+      console.error('Error in exportPdfController:', error);
       set.status = set.status || 500;
       return {
         status: "error",
